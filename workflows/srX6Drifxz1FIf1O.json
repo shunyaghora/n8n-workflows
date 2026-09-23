@@ -1,1 +1,180 @@
-{"updatedAt":"2026-08-25T19:28:22.347Z","createdAt":"2026-08-21T20:16:53.453Z","id":"srX6Drifxz1FIf1O","name":"Web Search Agent","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"modelName":"models/gemini-3.1-flash-lite","options":{}},"type":"@n8n/n8n-nodes-langchain.lmChatGoogleGemini","typeVersion":1.1,"position":[640,320],"id":"1e374274-4ae0-4311-b90b-3193f3f4837e","name":"Google Gemini Chat Model1","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}}},{"parameters":{"sessionIdType":"customKey","sessionKey":"sanjay"},"type":"@n8n/n8n-nodes-langchain.memoryBufferWindow","typeVersion":1.4,"position":[768,320],"id":"73eaa4d2-fb7e-4be2-b699-b40c06f01ae4","name":"Simple Memory"},{"parameters":{"promptType":"define","text":"={{ $json.query }}","options":{"systemMessage":"You are a web search agent. Perform the query and return the results back to the requester after summarizing the search results, unless specifically requested not to summarize the information."}},"type":"@n8n/n8n-nodes-langchain.agent","typeVersion":3.1,"position":[688,96],"id":"b2031bdc-8abc-45e2-ada1-ed6a376400f2","name":"Web AI Agent"},{"parameters":{"inputSource":"passthrough"},"id":"c26bbe78-cb6e-4776-8b9b-7aa72f1442dc","typeVersion":1.1,"name":"Start","type":"n8n-nodes-base.executeWorkflowTrigger","position":[480,96]},{"parameters":{"query":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}","options":{}},"type":"@tavily/n8n-nodes-tavily.tavilyTool","typeVersion":1,"position":[896,320],"id":"64027f7f-8a8d-4442-bf7c-aae60f75967b","name":"Tavily Web Search","credentials":{"tavilyApi":{"id":"SGT5lrIwFrstUb57","name":"Tavily account"}}}],"connections":{"Google Gemini Chat Model1":{"ai_languageModel":[[{"node":"Web AI Agent","type":"ai_languageModel","index":0}]]},"Simple Memory":{"ai_memory":[[{"node":"Web AI Agent","type":"ai_memory","index":0}]]},"Start":{"main":[[{"node":"Web AI Agent","type":"main","index":0}]]},"Tavily Web Search":{"ai_tool":[[{"node":"Web AI Agent","type":"ai_tool","index":0}]]}},"settings":{"executionOrder":"v1","availableInMCP":false,"binaryMode":"separate"},"staticData":null,"meta":null,"nodeGroups":[],"pinData":{},"versionId":"34fa5a53-7856-4024-9687-49b1b5af2ed7","activeVersionId":"34fa5a53-7856-4024-9687-49b1b5af2ed7","versionCounter":23,"triggerCount":0,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-08-21T20:16:53.475Z","createdAt":"2026-08-21T20:16:53.475Z","role":"workflow:owner","workflowId":"srX6Drifxz1FIf1O","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version 34fa5a53","description":""}}
+{
+  "updatedAt": "2026-08-25T19:28:22.347Z",
+  "createdAt": "2026-08-21T20:16:53.453Z",
+  "id": "srX6Drifxz1FIf1O",
+  "name": "Web Search Agent",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        320
+      ],
+      "id": "1e374274-4ae0-4311-b90b-3193f3f4837e",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "sanjay"
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        768,
+        320
+      ],
+      "id": "73eaa4d2-fb7e-4be2-b699-b40c06f01ae4",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "You are a web search agent. Perform the query and return the results back to the requester after summarizing the search results, unless specifically requested not to summarize the information."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        688,
+        96
+      ],
+      "id": "b2031bdc-8abc-45e2-ada1-ed6a376400f2",
+      "name": "Web AI Agent"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "c26bbe78-cb6e-4776-8b9b-7aa72f1442dc",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        480,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        896,
+        320
+      ],
+      "id": "64027f7f-8a8d-4442-bf7c-aae60f75967b",
+      "name": "Tavily Web Search",
+      "credentials": {
+        "tavilyApi": {
+          "id": "SGT5lrIwFrstUb57",
+          "name": "Tavily account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Web AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Web AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Web AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tavily Web Search": {
+      "ai_tool": [
+        [
+          {
+            "node": "Web AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "34fa5a53-7856-4024-9687-49b1b5af2ed7",
+  "activeVersionId": "34fa5a53-7856-4024-9687-49b1b5af2ed7",
+  "versionCounter": 23,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-08-21T20:16:53.475Z",
+      "createdAt": "2026-08-21T20:16:53.475Z",
+      "role": "workflow:owner",
+      "workflowId": "srX6Drifxz1FIf1O",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 34fa5a53",
+    "description": ""
+  }
+}

@@ -1,1 +1,1059 @@
-{"updatedAt":"2026-09-23T20:00:26.196Z","createdAt":"2026-09-21T17:19:20.587Z","id":"MpzMosAO0JSD0kJQ","name":"Fortune Teller Agent v2","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"modelName":"models/gemini-3.1-flash-lite","options":{}},"type":"@n8n/n8n-nodes-langchain.lmChatGoogleGemini","typeVersion":1.1,"position":[-176,720],"id":"a063721b-1d19-430f-a7fc-ae1b9ef7a739","name":"Google Gemini Chat Model","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}}},{"parameters":{"httpMethod":"POST","path":"brighu","responseMode":"lastNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[-848,608],"id":"90967fa5-bb02-4749-96a0-8a878ff38037","name":"Webhook","webhookId":"fe5dc4ab-c85e-4cae-b8a9-81f3bb55953e"},{"parameters":{"public":true,"initialMessages":"Hi there! 👋\nMy name is Nagatilo. How can I assist you today?","options":{}},"type":"@n8n/n8n-nodes-langchain.chatTrigger","typeVersion":1.4,"position":[-848,-128],"id":"6a851c6e-358e-41c4-acb9-45495c9a1a67","name":"When chat message received","webhookId":"6b0e2f95-6af0-425e-8aec-9418a54c6b8f"},{"parameters":{"method":"POST","url":"http://rudraghora:5678/webhook/brighu","sendHeaders":true,"headerParameters":{"parameters":[{"name":"research_depth","value":"2"},{"name":"include_sources","value":"true"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={\n\"question\": \"{{ $json.chatInput }}\"\n}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[-624,-128],"id":"5f3a828e-1fe5-4da7-9a57-11709139407e","name":"HTTP Request"},{"parameters":{"assignments":{"assignments":[{"id":"86eeb23f-52c4-4050-8340-7d6c379a4a16","name":"question","value":"={{$json.body.question}}","type":"string"},{"id":"783b9d61-79fb-431f-9bd5-ae61523c52ec","name":"research_depth","value":"={{Number($json.headers.research_depth || 3)}}","type":"number"},{"id":"1e1fbba6-f385-4507-afb0-aa6b7a5dae18","name":"include_sources","value":"={{String($json.headers.include_sources ?? 'true').toLowerCase() === 'true'}}","type":"boolean"}]},"options":{}},"type":"n8n-nodes-base.set","typeVersion":3.5,"position":[-624,608],"id":"b6a3daf7-4cbc-4a85-9764-1c6e099fdfea","name":"Normalize Input"},{"parameters":{"promptType":"define","text":"=Forecast question:\n{{ $('Normalize Input').item.json.question }}\n\nRequested research depth:\n{{ $('Normalize Input').item.json.research_depth }} out of 5\n\nYour task is to research this forecasting question according to the requested research depth and produce the structured evidence package defined in your system instructions.","hasOutputParser":true,"options":{"systemMessage":"=# ROLE\n\nYou are Brighu, an evidence research agent supporting a forecasting system.\n\nYour job is to research the user's forecasting question and produce a balanced, factual, evidence-based research package for a downstream evaluation model.\n\nYou are NOT the forecasting model.\n\nDo not make the final YES/NO prediction.\nDo not assign a final probability.\nDo not express your own overall judgment about whether the proposition will occur.\n\n# CORE PRINCIPLE\n\nTreat the user's question as a proposition to be investigated.\n\nDo not assume that the proposition is true or false.\n\nReturn a null proposition if there is the user did not provide any proposition or question to evaluate.\n\nYour responsibility is to gather and organize the best available evidence so that a downstream evaluation model can assess the proposition.\n\n# RESEARCH DEPTH\n\nThe requested research depth determines the maximum research effort.\n\nResearch depth:\n\n1 = Quick research\n2 = Basic research\n3 = Standard research\n4 = Deep research\n5 = Very deep research\n\nAt lower depths:\n- Prioritize the most important and authoritative sources.\n- Focus on the strongest evidence.\n- Avoid unnecessary searches.\n\nAt higher depths:\n- Investigate additional independent sources.\n- Search more broadly for relevant evidence.\n- Actively look for contradictory evidence.\n- Investigate important uncertainties and unresolved questions.\n- Seek independent corroboration of important claims.\n\nDo not stop at the first supporting result.\n\nDo not continue searching merely to increase the number of sources when the evidence is already sufficiently comprehensive for the requested research depth.\n\n# BALANCED RESEARCH\n\nResearch both sides of the proposition:\n\n1. Evidence supporting the proposition\n2. Evidence contradicting the proposition\n\nActively search for evidence that could falsify or weaken the proposition.\n\nDo not selectively search only for information that confirms an initial interpretation.\n\nIf the available evidence is predominantly one-sided, report that fact rather than artificially creating balance.\n\n# SOURCE PRIORITY\n\nPrioritize sources approximately in this order:\n\n1. Primary and authoritative sources\n2. Official documents, filings, statements, datasets, and reports\n3. High-quality independent reporting\n4. Independent expert analysis\n5. Other relevant sources\n\nUse multiple independent sources when practical, especially for important claims.\n\nDo not treat multiple articles that simply repeat the same underlying source as independent corroboration.\n\n# TEMPORAL REASONING\n\nPay close attention to dates.\n\nDistinguish:\n- Current information\n- Historical information\n- Information relevant to the forecast horizon\n- Information that may have become outdated\n\nPrefer recent information when the question concerns a future event.\n\nDo not use historical information as if it were current.\n\nConsider whether new information may have changed the significance of older evidence.\n\n# FORECAST HORIZON\n\nIdentify the forecast horizon when it is explicitly stated or can be reliably inferred.\n\nIf the question contains a specific deadline, preserve it exactly.\n\nIf no meaningful forecast horizon can be established, report that fact.\n\nDo not invent a deadline.\n\n# EVIDENCE\n\nFor each important piece of evidence, identify:\n\n- The factual claim\n- Why it is relevant\n- The source\n- The source URL\n- Publication date, when available\n\nDistinguish factual evidence from:\n- Opinions\n- Analyst forecasts\n- Predictions\n- Speculation\n- Claims made by interested parties\n\nDo not present opinions or forecasts as established facts.\n\n# UNCERTAINTY\n\nIdentify important:\n\n- Unknowns\n- Missing information\n- Conflicting evidence\n- Assumptions\n- Dependencies\n- Factors that could materially change the outcome\n\nIf reliable evidence is insufficient, explicitly say so.\n\nDo not fill gaps with speculation.\n\n# SOURCE INTEGRITY\n\nDo not manufacture:\n\n- Facts\n- Sources\n- URLs\n- Publication dates\n- Quotes\n- Statistics\n- Claims\n\nDo not invent missing source information.\n\nIf a publication date is unavailable, return an empty string.\n\nIf a source cannot be reliably identified, do not present it as a verified source.\n\nRESEARCH SUFFICIENCY\n\nAfter completing the research, determine whether the retrieved evidence is sufficient for a responsible downstream evaluation.\n\nSet research_sufficient to true only when there is enough relevant, reasonably current, source-backed evidence to evaluate the proposition.\n\nConsider:\n\n- relevance to the exact proposition\n- recency relative to the forecast horizon\n- source credibility\n- whether the sources contain substantive evidence rather than merely mentioning the topic\n- important evidence supporting the proposition\n- important evidence contradicting the proposition, when reasonably available\n- major unresolved information gaps\n\nDo not require evidence on both sides when meaningful evidence on one side genuinely dominates the available information.\n\nSet research_sufficient to false when the research is sparse, stale, poorly sourced, irrelevant, or leaves a significant information gap that additional web research could reasonably address.\n\nIf research_sufficient is true, research_gap may be an empty string.\n\nWhen research_sufficient is false, describe the specific missing information in research_gap.\n\nDo not make a forecast or assign a probability when determining research sufficiency.\n\n# OUTPUT\n\nYour final output must contain:\n\n- normalized proposition\n- forecast horizon, if identifiable\n- supporting evidence\n- contradicting evidence\n- key uncertainties\n- sources used\n\nReturn only the structured research output required by the output schema.\n\nEvery factual claim based on web research should include its source title, URL, and publication date when available.\n\nDo not include a final YES/NO prediction.\n\nDo not include a final probability.\n\nDo not include a recommendation.\n\nA downstream evaluation model will evaluate the evidence.\n\n# CURRENT DATE AND TIME\n\nToday's Date and Time:\n{{ $now.setZone('America/New_York').toLocaleString() }}\n\nMachine Timestamp:\n{{ $now.toISO() }}\n\nDay of the Week:\n{{ $now.setZone('America/New_York').toFormat('cccc') }}","maxIterations":"={{ $('Normalize Input').item.json.research_depth }}"}},"type":"@n8n/n8n-nodes-langchain.agent","typeVersion":3.1,"position":[-112,480],"id":"ae7d4673-a5e0-43f3-a413-3bad1550e8f1","name":"Research AI Agent","onError":"continueErrorOutput"},{"parameters":{"query":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}","options":{"topic":"general","search_depth":"advanced","max_results":5}},"type":"@tavily/n8n-nodes-tavily.tavilyTool","typeVersion":1,"position":[-48,720],"id":"e70c1e3c-53dd-40ee-84e5-f529f4e37570","name":"Search in Tavily","credentials":{"tavilyApi":{"id":"SGT5lrIwFrstUb57","name":"Tavily account"}}},{"parameters":{"schemaType":"manual","inputSchema":"{\n  \"normalized_proposition\": \"string\",\n  \"forecast_horizon\": \"string\",\n  \"supporting_evidence\": [\n    {\n      \"claim\": \"string\",\n      \"source\": \"string\",\n      \"url\": \"string\",\n      \"publication_date\": \"string\"\n    }\n  ],\n  \"contradicting_evidence\": [\n    {\n      \"claim\": \"string\",\n      \"source\": \"string\",\n      \"url\": \"string\",\n      \"publication_date\": \"string\"\n    }\n  ],\n  \"key_uncertainties\": [\n    \"string\"\n  ],\n  \"sources_used\": [\n    {\n      \"title\": \"string\",\n      \"url\": \"string\",\n      \"publication_date\": \"string\"\n    }\n  ],\n  \"research_sufficient\": \"boolean\",\n  \"research_gap\": \"string\"\n}"},"type":"@n8n/n8n-nodes-langchain.outputParserStructured","typeVersion":1.3,"position":[96,720],"id":"a496da70-d8cb-4814-98a7-1cc6480cb039","name":"Structured Output Parser"},{"parameters":{"method":"POST","url":"https://api.cloudflare.com/client/v4/accounts/cd762ebcfd0159a42d27377c4b67801e/ai/run","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Authorization","value":"[REDACTED-AUTHORIZATION]"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ $json.jev_request }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[1984,224],"id":"85fa1e6f-7626-440f-9fb1-cc48d5cf4e7a","name":"Jev Evaluation","retryOnFail":true},{"parameters":{"tableId":"forecast_requests","fieldsUi":{"fieldValues":[{"fieldId":"=question","fieldValue":"={{$json.question}}"},{"fieldId":"=research_depth","fieldValue":"={{$json.research_depth}}"},{"fieldId":"include_sources","fieldValue":"={{$json.include_sources}}"},{"fieldId":"status","fieldValue":"researching"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[-400,608],"id":"e46994df-0223-47d9-9871-ae66b5b0ae61","name":"Create Forecast Record","credentials":{"supabaseApi":{"id":"tWTqrf6QJy4O38Dd","name":"Supabase account"}},"onError":"continueErrorOutput"},{"parameters":{"jsCode":"const research = $json;\nconst forecast = $('Create Forecast Record').item.json;\n\nreturn {\n  json: {\n    forecast_id: forecast.id,\n\n    research: research,\n\n    jev_request: {\n      model: \"typesafe/jev\",\n      input: {\n        state: JSON.stringify({\n          proposition: research.normalized_proposition,\n          forecast_horizon: research.forecast_horizon,\n          supporting_evidence: research.supporting_evidence,\n          contradicting_evidence: research.contradicting_evidence,\n          uncertainties: research.key_uncertainties,\n          sources: research.sources_used\n        }),\n        questions: {\n          outcome: {\n            type: \"noul\",\n            instructions: \"Based on the research evidence, does the proposition occur?\"\n          },\n          evidence_strength: {\n            type: \"score\",\n            instructions: \"How strongly does the evidence support the proposition?\",\n            criteria: [\n              \"Strongly against\",\n              \"Somewhat against\",\n              \"Neutral or insufficient\",\n              \"Somewhat supports\",\n              \"Strongly supports\"\n            ]\n          },\n          evidence_quality: {\n            type: \"score\",\n            instructions: \"How high is the overall quality of the evidence?\",\n            criteria: [\n              \"Very poor\",\n              \"Poor\",\n              \"Moderate\",\n              \"Good\",\n              \"Very good\"\n            ]\n          },\n          contradictory_evidence: {\n            type: \"noul\",\n            instructions: \"Is there substantial evidence contradicting the proposition?\"\n          }\n        }\n      }\n    }\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[1760,288],"id":"1d453f7c-4e0c-4227-ac72-a2f3b7a63861","name":"Prepare Jev Request","onError":"continueErrorOutput"},{"parameters":{"jsCode":"const jev = $json.result.result;\nconst answers = jev.answers;\n\n// Get the preserved context from the node immediately before Jev\nconst prepared = $('Prepare Jev Request').item.json;\n\nreturn {\n  json: {\n    forecast_id: prepared.forecast_id,\n\n    proposition: prepared.research.normalized_proposition,\n    forecast_horizon: prepared.research.forecast_horizon,\n\n    research: prepared.research,\n\n    prediction: answers.outcome.noul,\n\n    evidence_strength: answers.evidence_strength.score,\n    evidence_strength_confidence: answers.evidence_strength.confidence,\n\n    evidence_quality: answers.evidence_quality.score,\n    evidence_quality_confidence: answers.evidence_quality.confidence,\n\n    contradictory_evidence: answers.contradictory_evidence.noul,\n\n    jev_response: $json.result,\n\n    jev_model: jev.model,\n    jev_usage: jev.usage\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[2208,224],"id":"32c2720b-f54d-4ee6-b534-e1ceb99350fe","name":"Build Forecast Result"},{"parameters":{"operation":"update","tableId":"forecast_requests","filters":{"conditions":[{"keyName":"id","condition":"eq","keyValue":"={{ $json.forecast_id }}"}]},"fieldsUi":{"fieldValues":[{"fieldId":"status","fieldValue":"completed"},{"fieldId":"research","fieldValue":"={{$json.research}}"},{"fieldId":"jev_response","fieldValue":"={{$json.jev_response}}"},{"fieldId":"prediction","fieldValue":"={{$json.prediction}}"},{"fieldId":"probability","fieldValue":"={{$json.prediction}}"},{"fieldId":"evidence_strength","fieldValue":"={{$json.evidence_strength}}"},{"fieldId":"evidence_quality","fieldValue":"={{$json.evidence_quality}}"},{"fieldId":"sources","fieldValue":"={{$json.research.sources_used}}"},{"fieldId":"completed_at","fieldValue":"={{$now.toISO()}}"},{"fieldId":"jev_request","fieldValue":"=Proposition: {{ $json.proposition }}"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[2432,224],"id":"7ef57722-b9e4-4a85-accb-c5e83403aede","name":"Update Forecast Record","credentials":{"supabaseApi":{"id":"tWTqrf6QJy4O38Dd","name":"Supabase account"}}},{"parameters":{"jsCode":"const result = $json;\n\nconst response = {\n  request_id: result.id,\n  question: result.question,\n  proposition: result.research.normalized_proposition,\n\n  prediction: Number(result.prediction),\n  probability: Number(result.probability),\n\n  evidence_strength: Number(result.evidence_strength),\n  evidence_quality: Number(result.evidence_quality),\n\n  contradictory_evidence: Number(\n    result.jev_response.result.answers.contradictory_evidence.noul\n  ),\n\n  completed_at: result.completed_at,\n\n  research: result.research\n};\n\nif (result.include_sources) {\n  response.sources = result.sources || [];\n}\n\nreturn {\n  json: response\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[2656,224],"id":"4506e387-498b-409f-a353-471d72bad2d6","name":"Build Final Response"},{"parameters":{"modelId":{"__rl":true,"value":"models/gemini-3.5-flash-lite","mode":"list","cachedResultName":"models/gemini-3.5-flash-lite"},"messages":{"values":[{"content":"You are the explanation layer of an evidence-based forecasting system.\n\nYour job is to explain the completed forecast using ONLY the supplied forecast data and research.\n\nThe probability and evidence assessments have already been produced by Jev. You are a reporting layer, not an evaluation layer.\n\nSTRICT RULES:\n\n- Do not calculate, modify, reinterpret, or replace the Jev probability.\n- Do not produce an alternative probability.\n- Do not perform additional research.\n- Do not introduce facts that are not present in the supplied research.\n- Do not infer facts or conclusions that are not explicitly supported by the supplied research.\n- Do not infer the meaning of a Jev score beyond its supplied legend.\n- Report Jev scores and their legends faithfully.\n- Do not turn uncertainty into certainty.\n- Clearly distinguish documented evidence from uncertainty.\n- Do not claim that evidence proves a future event.\n- If contradictory evidence is empty, explicitly say that no contradictory evidence was identified in the supplied research.\n- Keep the explanation concise but informative.\n\nExplain:\n\n1. The exact proposition evaluated.\n2. The Jev probability.\n3. The main supporting evidence.\n4. The main contradictory evidence, if any.\n5. The important uncertainties and limitations.\n6. The Jev evidence-strength score, using its supplied legend.\n7. The Jev evidence-quality score, using its supplied legend.\n8. The contradictory-evidence Noul value, without assigning it an interpretation beyond what the supplied data establishes.\n\nWhen discussing a score, do not invent a qualitative label unless that label is explicitly provided by the Jev legend.\n\nReturn ONLY the explanation text. Do not return JSON.","role":"model"},{"content":"=Forecast proposition:\n{{ $json.research.normalized_proposition }}\n\nJev probability:\n{{ $json.probability }}\n\nEvidence strength:\n{{ $json.evidence_strength }} out of 4\n\nEvidence quality:\n{{ $json.evidence_quality }} out of 4\n\nContradictory evidence:\n{{ $json.contradictory_evidence }}\n\nResearch:\n{{ JSON.stringify($json.research) }}"}]},"builtInTools":{},"options":{}},"type":"@n8n/n8n-nodes-langchain.googleGemini","typeVersion":1.2,"position":[2880,224],"id":"8fe787cc-ee9c-4c4f-a520-981f495d6a50","name":"Forecast Explanation","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}},"onError":"continueErrorOutput"},{"parameters":{"jsCode":"const forecast = $('Build Final Response').item.json;\nconst explanation = $json.content?.parts?.[0]?.text || '';\n\nconst probability = Number(forecast.probability);\nconst probabilityPercent = Math.round(probability * 100);\n\nfunction extractSection(text, startPatterns, endPatterns) {\n  let start = -1;\n\n  for (const pattern of startPatterns) {\n    const match = text.match(pattern);\n\n    if (match) {\n      start = match.index + match[0].length;\n      break;\n    }\n  }\n\n  if (start === -1) return '';\n\n  let end = text.length;\n\n  for (const pattern of endPatterns) {\n    const remaining = text.slice(start);\n    const match = remaining.match(pattern);\n\n    if (match) {\n      end = Math.min(end, start + match.index);\n    }\n  }\n\n  return text.slice(start, end).trim();\n}\n\nfunction cleanText(text) {\n  return text\n    .replace(/\\*\\*/g, '')\n    .replace(/^\\s*\\d+\\.\\s*/gm, '')\n    .trim();\n}\n\n// Common Jev section headings.\n// Gemini may return these with or without numbering and\n// with or without \"The\".\nconst jevEvidenceStrengthHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Jev Evidence-Strength Score\\s*:?\\s*/i;\n\nconst jevEvidenceQualityHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Jev Evidence-Quality Score\\s*:?\\s*/i;\n\nconst contradictoryEvidenceNoulHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Contradictory-Evidence Noul Value\\s*:?\\s*/i;\n\nconst jevScoresHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Jev Scores\\s*:?\\s*/i;\n\nconst supportingEvidence = cleanText(\n  extractSection(\n    explanation,\n    [/Main Supporting Evidence\\s*:?\\s*/i],\n    [\n      /Main Contradictory Evidence\\s*:?\\s*/i,\n      /Important Uncertainties and Limitations\\s*:?\\s*/i,\n      jevScoresHeading,\n      jevEvidenceStrengthHeading,\n      jevEvidenceQualityHeading,\n      contradictoryEvidenceNoulHeading\n    ]\n  )\n);\n\nconst contradictoryEvidence = cleanText(\n  extractSection(\n    explanation,\n    [/Main Contradictory Evidence\\s*:?\\s*/i],\n    [\n      /Important Uncertainties and Limitations\\s*:?\\s*/i,\n      jevScoresHeading,\n      jevEvidenceStrengthHeading,\n      jevEvidenceQualityHeading,\n      contradictoryEvidenceNoulHeading\n    ]\n  )\n);\n\nconst uncertainties = cleanText(\n  extractSection(\n    explanation,\n    [/Important Uncertainties and Limitations\\s*:?\\s*/i],\n    [\n      jevScoresHeading,\n      jevEvidenceStrengthHeading,\n      jevEvidenceQualityHeading,\n      contradictoryEvidenceNoulHeading,\n      /EVIDENCE QUALITY\\s*:?\\s*/i\n    ]\n  )\n);\n\nlet output = `EVALUATED PROPOSITION:\n\n${forecast.proposition}\n\nFORECAST:\n\n${probabilityPercent}% probability\n\nSUPPORTING EVIDENCE:\n\n${supportingEvidence || 'No supporting evidence was identified.'}\n\nCONTRADICTORY EVIDENCE:\n\n${contradictoryEvidence || 'No contradictory evidence was identified.'}\n\nUNCERTAINTIES:\n\n${uncertainties || 'No additional uncertainties were identified.'}\n\nEVIDENCE QUALITY:\n\nStrength: ${Number(forecast.evidence_strength).toFixed(2)} / 4\nQuality: ${Number(forecast.evidence_quality).toFixed(2)} / 4\nContradictory Evidence: ${Number(forecast.contradictory_evidence).toFixed(2)} / 1`;\n\nif (forecast.sources && forecast.sources.length > 0) {\n  output += `\n\nSOURCES:\n`;\n\n  for (const source of forecast.sources) {\n    const title = source.title || source.source_title || 'Source';\n    const url = source.url || '';\n\n    output += `\\n• ${title}`;\n\n    if (url) {\n      output += `\\n  ${url}`;\n    }\n  }\n}\n\nreturn {\n  json: {\n    output\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[3232,144],"id":"72cca35f-1d47-4900-9918-4a5f5e4545c5","name":"Build Completed Forecast"},{"parameters":{"operation":"update","tableId":"forecast_requests","filters":{"conditions":[{"keyName":"id","condition":"eq","keyValue":"={{ $('Prepare Jev Request').item.json.forecast_id }}"}]},"fieldsUi":{"fieldValues":[{"fieldId":"final_output","fieldValue":"={{ $json.output }}"}]}},"type":"n8n-nodes-base.supabase","typeVersion":1,"position":[3456,144],"id":"943a0ad2-ba2c-406d-b05c-35c05ce6f19e","name":"Save Final Output","alwaysOutputData":true,"credentials":{"supabaseApi":{"id":"tWTqrf6QJy4O38Dd","name":"Supabase account"}},"onError":"continueErrorOutput"},{"parameters":{"jsCode":"return [\n  {\n    json: {\n      output: $('Build Completed Forecast').first().json.output\n    }\n  }\n];\n"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[3680,96],"id":"fc72cccf-8346-46e1-af2a-fca86402702e","name":"Return Response"},{"parameters":{"jsCode":"const research = $json.output;\n\nreturn {\n  json: {\n    ...research,\n    research_sufficient: research.research_sufficient === true,\n    research_gap: research.research_gap || ''\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[512,512],"id":"59489d18-f065-4056-87c2-c8edd5f00d95","name":"Check Research Sufficiency"},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"loose","version":3},"conditions":[{"id":"b41316dd-8e71-4ebd-a6d8-5e67782d333f","leftValue":"={{ $json.research_sufficient }}","rightValue":"true","operator":{"type":"string","operation":"equals","name":"filter.operator.equals"}}],"combinator":"and"},"looseTypeValidation":true,"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[736,512],"id":"95c6af5b-f219-423d-915f-fbf53d37f744","name":"If"},{"parameters":{"modelId":{"__rl":true,"value":"models/gemini-3.5-flash-lite","mode":"list","cachedResultName":"models/gemini-3.5-flash-lite"},"messages":{"values":[{"content":"You are an evidence retrieval assistant for an evidence-based forecasting system.\n\nYour task is to find additional, source-backed evidence for a forecasting proposition when the primary research is insufficient.\n\nYou are NOT the forecasting model.\n\nSTRICT RULES:\n\n- Do not predict the outcome.\n- Do not provide a probability.\n- Do not provide your own assessment of whether the proposition will occur.\n- Do not turn your interpretation into evidence.\n- Use Google Search to find current, relevant information.\n- Prefer authoritative and primary sources when available.\n- Pay close attention to the forecast horizon.\n- Look for both supporting and contradicting evidence where relevant.\n- Return only evidence that can be attributed to a retrieved source.\n- Do not invent facts, sources, URLs, dates, or quotations.\n- Do not treat another AI's opinion as evidence.\n- Do not repeat existing evidence unless a different source provides materially new information.\n- If you cannot find meaningful additional evidence, return empty evidence.\n\nFor every source-backed evidence item, explicitly provide the canonical URL of the source page that you retrieved through Google Search.\n\nThe canonical URL must be the actual source website URL, not a Google grounding URL, Vertex AI grounding URL, redirect URL, or search-results URL.\n\nReturn the evidence in this plain-text format:\n\nSUPPORTING EVIDENCE:\n- Claim: [source-backed factual claim]\n  Source: [source title]\n  URL: [canonical source URL]\n  Date: [publication or update date if available]\n  Relevance: [why this evidence is relevant]\n\nCONTRADICTING EVIDENCE:\n- Claim: [source-backed factual claim]\n  Source: [source title]\n  URL: [canonical source URL]\n  Date: [publication or update date if available]\n  Relevance: [why this evidence is relevant]\n\nIf there is no meaningful evidence in a category, leave that category empty.\n\nDo not provide any forecast, probability, recommendation, or conclusion.","role":"model"},{"content":"=Forecast proposition:\n{{ $json.normalized_proposition }}\n\nForecast horizon:\n{{ $json.forecast_horizon }}\n\nWhy the primary research was considered insufficient:\n{{ $json.research_gap }}\n\nExisting supporting evidence:\n{{ JSON.stringify($json.supporting_evidence) }}\n\nExisting contradicting evidence:\n{{ JSON.stringify($json.contradicting_evidence) }}\n\nFind additional source-backed evidence that could help evaluate this proposition.\n\nDo not make a prediction or assign a probability."}]},"jsonOutput":"","builtInTools":{"googleSearch":true},"options":{}},"type":"@n8n/n8n-nodes-langchain.googleGemini","typeVersion":1.2,"position":[960,688],"id":"3758716a-8c41-4775-bdf5-11c3664d0888","name":"Gemini Research","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}},"onError":"continueErrorOutput"},{"parameters":{"jsCode":"const text = $json.content?.parts?.[0]?.text || '';\n\nconst supportingEvidence = [];\nconst contradictingEvidence = [];\n\nfunction parseEvidenceBlock(block) {\n  const results = [];\n\n  const items = block\n    .split(/\\n(?=-\\s*Claim:)/)\n    .map(item => item.trim())\n    .filter(Boolean);\n\n  for (const item of items) {\n    const claimMatch = item.match(\n      /-\\s*Claim:\\s*(.*?)(?=\\n\\s*Source:|\\n\\s*URL:|\\n\\s*Date:|\\n\\s*Relevance:|$)/s\n    );\n\n    const sourceMatch = item.match(\n      /Source:\\s*(.*?)(?=\\n\\s*URL:|\\n\\s*Date:|\\n\\s*Relevance:|$)/s\n    );\n\n    const urlMatch = item.match(\n      /URL:\\s*(https?:\\/\\/[^\\s]+)/i\n    );\n\n    const dateMatch = item.match(\n      /Date:\\s*(.*?)(?=\\n\\s*Relevance:|$)/s\n    );\n\n    const relevanceMatch = item.match(\n      /Relevance:\\s*(.*)$/s\n    );\n\n    const claim = claimMatch?.[1]?.trim() || '';\n    const source_title = sourceMatch?.[1]?.trim() || '';\n    const source_url = urlMatch?.[1]?.trim() || '';\n    const publication_date = dateMatch?.[1]?.trim() || '';\n    const relevance = relevanceMatch?.[1]?.trim() || '';\n\n    // Only accept evidence with a claim and a real URL.\n    if (claim && source_url) {\n      results.push({\n        claim,\n        source_title,\n        source_url,\n        publication_date,\n        relevance\n      });\n    }\n  }\n\n  return results;\n}\n\nconst supportingMatch = text.match(\n  /SUPPORTING EVIDENCE:\\s*([\\s\\S]*?)(?=\\n\\s*CONTRADICTING EVIDENCE:|$)/i\n);\n\nconst contradictingMatch = text.match(\n  /CONTRADICTING EVIDENCE:\\s*([\\s\\S]*)$/i\n);\n\nif (supportingMatch) {\n  supportingEvidence.push(\n    ...parseEvidenceBlock(supportingMatch[1])\n  );\n}\n\nif (contradictingMatch) {\n  contradictingEvidence.push(\n    ...parseEvidenceBlock(contradictingMatch[1])\n  );\n}\n\nreturn {\n  json: {\n    supporting_evidence: supportingEvidence,\n    contradicting_evidence: contradictingEvidence\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[1312,576],"id":"aa871a8d-6072-4655-b530-8ca6a87d590c","name":"Normalize Gemini Evidence","onError":"continueErrorOutput"},{"parameters":{"jsCode":"const original = $('Check Research Sufficiency').item.json;\nconst gemini = $json;\n\nfunction normalizeEvidence(evidence) {\n  return {\n    claim: evidence.claim || evidence.factual_claim || '',\n    source_title: evidence.source_title || evidence.source || '',\n    source_url: evidence.source_url || evidence.url || '',\n    publication_date: evidence.publication_date || '',\n    relevance: evidence.relevance || evidence.relevant || ''\n  };\n}\n\nconst originalSupporting =\n  (original.supporting_evidence || []).map(normalizeEvidence);\n\nconst originalContradicting =\n  (original.contradicting_evidence || []).map(normalizeEvidence);\n\nconst geminiSupporting =\n  (gemini.supporting_evidence || []).map(normalizeEvidence);\n\nconst geminiContradicting =\n  (gemini.contradicting_evidence || []).map(normalizeEvidence);\n\nconst supporting_evidence = [\n  ...originalSupporting,\n  ...geminiSupporting\n];\n\nconst contradicting_evidence = [\n  ...originalContradicting,\n  ...geminiContradicting\n];\n\nconst sources_used = [\n  ...(original.sources_used || []).map(source => ({\n    title: source.title || source.source_title || '',\n    url: source.url || source.source_url || '',\n    publication_date: source.publication_date || ''\n  })),\n\n  ...[...geminiSupporting, ...geminiContradicting]\n    .filter(e => e.source_url)\n    .map(e => ({\n      title: e.source_title,\n      url: e.source_url,\n      publication_date: e.publication_date\n    }))\n];\n\n// Determine whether the combined research actually contains\n// meaningful source-backed evidence.\nconst hasSupportingEvidence = supporting_evidence.some(\n  e => e.claim && e.source_url\n);\n\nconst hasContradictingEvidence = contradicting_evidence.some(\n  e => e.claim && e.source_url\n);\n\nconst hasSources = sources_used.some(\n  source => source.url\n);\n\nconst research_sufficient =\n  hasSources &&\n  (hasSupportingEvidence || hasContradictingEvidence);\n\nreturn {\n  json: {\n    normalized_proposition: original.normalized_proposition,\n\n    forecast_horizon: original.forecast_horizon,\n\n    supporting_evidence,\n\n    contradicting_evidence,\n\n    key_uncertainties: original.key_uncertainties || [],\n\n    sources_used,\n\n    research_sufficient,\n\n    research_gap: research_sufficient\n      ? ''\n      : 'No meaningful source-backed evidence was found after the additional research.',\n\n    research_enhanced_by_gemini: true\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[1536,512],"id":"8866cc96-e413-43b7-a1f4-f9e2f5030c03","name":"Combine Research Evidence","onError":"continueErrorOutput"},{"parameters":{"jsCode":"return {\n  json: {\n    output: \"Sorry, something went wrong while processing your request. Please try again.\"\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[3680,624],"id":"3c734275-c4f8-4473-8e10-0777b6745f96","name":"Build Error Response"},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"e1f2b145-9ad1-4120-9ca9-40d30ebec891","leftValue":"={{ $json.output.normalized_proposition }}","rightValue":"=\"null\"","operator":{"type":"string","operation":"empty","singleValue":true}}],"combinator":"and"},"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[288,416],"id":"3ce4ea0a-6abd-43c9-bdc1-38f8ac0f7c38","name":"If1"},{"parameters":{"jsCode":"return {\n  json: {\n    output: \"No question or proposition was provided. Please try again.\"\n  }\n};"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[512,320],"id":"ca189322-d3b0-498f-b425-13af060c2401","name":"Return Response1"}],"connections":{"Google Gemini Chat Model":{"ai_languageModel":[[{"node":"Research AI Agent","type":"ai_languageModel","index":0}]]},"Webhook":{"main":[[{"node":"Normalize Input","type":"main","index":0}]]},"When chat message received":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]},"Normalize Input":{"main":[[{"node":"Create Forecast Record","type":"main","index":0}]]},"Research AI Agent":{"main":[[{"node":"If1","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Search in Tavily":{"ai_tool":[[{"node":"Research AI Agent","type":"ai_tool","index":0}]]},"Structured Output Parser":{"ai_outputParser":[[{"node":"Research AI Agent","type":"ai_outputParser","index":0}]]},"Jev Evaluation":{"main":[[{"node":"Build Forecast Result","type":"main","index":0}]]},"Create Forecast Record":{"main":[[{"node":"Research AI Agent","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Prepare Jev Request":{"main":[[{"node":"Jev Evaluation","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Build Forecast Result":{"main":[[{"node":"Update Forecast Record","type":"main","index":0}]]},"Update Forecast Record":{"main":[[{"node":"Build Final Response","type":"main","index":0}]]},"Build Final Response":{"main":[[{"node":"Forecast Explanation","type":"main","index":0}]]},"Forecast Explanation":{"main":[[{"node":"Build Completed Forecast","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Build Completed Forecast":{"main":[[{"node":"Save Final Output","type":"main","index":0}]]},"Save Final Output":{"main":[[{"node":"Return Response","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Check Research Sufficiency":{"main":[[{"node":"If","type":"main","index":0}]]},"If":{"main":[[{"node":"Prepare Jev Request","type":"main","index":0}],[{"node":"Gemini Research","type":"main","index":0}]]},"Gemini Research":{"main":[[{"node":"Normalize Gemini Evidence","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Normalize Gemini Evidence":{"main":[[{"node":"Combine Research Evidence","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"Combine Research Evidence":{"main":[[{"node":"Prepare Jev Request","type":"main","index":0}],[{"node":"Build Error Response","type":"main","index":0}]]},"If1":{"main":[[{"node":"Return Response1","type":"main","index":0}],[{"node":"Check Research Sufficiency","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate","availableInMCP":false},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"nodeGroups":[],"pinData":{"Webhook":[{"json":{"headers":{"content-type":"application/json; charset=utf-8","research_depth":"4","include_sources":"true","user-agent":"Dalvik/2.1.0 (Linux; U; Android 17; Pixel 9 Pro XL Build/CP2A.260805.005)","host":"192.168.86.58:5678","connection":"Keep-Alive","accept-encoding":"gzip","content-length":"31"},"params":{},"query":{},"body":{"question":"hi","voice":false},"webhookUrl":"http://rudraghora:5678/webhook/brighu","executionMode":"production"},"pairedItem":{"item":0}}],"Check Research Sufficiency":[{"json":{"research_sufficient":false,"forecast_horizon":null,"supporting_evidence":[],"contradicting_evidence":[],"research_gap":"The user has not provided a forecasting proposition. I need a clear statement or question that can be researched and evaluated.","key_uncertainties":["The user prompt \"hi\" does not contain a proposition or question to evaluate."],"sources_used":[],"normalized_proposition":null},"pairedItem":{"item":0}}]},"versionId":"c77ae7f7-1c4c-45bd-860c-5b2337a5a8a1","activeVersionId":"c77ae7f7-1c4c-45bd-860c-5b2337a5a8a1","versionCounter":182,"triggerCount":2,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-09-21T17:19:20.603Z","createdAt":"2026-09-21T17:19:20.603Z","role":"workflow:owner","workflowId":"MpzMosAO0JSD0kJQ","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version c77ae7f7","description":""}}
+{
+  "updatedAt": "2026-09-23T20:00:26.196Z",
+  "createdAt": "2026-09-21T17:19:20.587Z",
+  "id": "MpzMosAO0JSD0kJQ",
+  "name": "Fortune Teller Agent v2",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -176,
+        720
+      ],
+      "id": "a063721b-1d19-430f-a7fc-ae1b9ef7a739",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "brighu",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -848,
+        608
+      ],
+      "id": "90967fa5-bb02-4749-96a0-8a878ff38037",
+      "name": "Webhook",
+      "webhookId": "fe5dc4ab-c85e-4cae-b8a9-81f3bb55953e"
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nMy name is Nagatilo. How can I assist you today?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -848,
+        -128
+      ],
+      "id": "6a851c6e-358e-41c4-acb9-45495c9a1a67",
+      "name": "When chat message received",
+      "webhookId": "6b0e2f95-6af0-425e-8aec-9418a54c6b8f"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://rudraghora:5678/webhook/brighu",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "research_depth",
+              "value": "2"
+            },
+            {
+              "name": "include_sources",
+              "value": "true"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"question\": \"{{ $json.chatInput }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -624,
+        -128
+      ],
+      "id": "5f3a828e-1fe5-4da7-9a57-11709139407e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "86eeb23f-52c4-4050-8340-7d6c379a4a16",
+              "name": "question",
+              "value": "={{$json.body.question}}",
+              "type": "string"
+            },
+            {
+              "id": "783b9d61-79fb-431f-9bd5-ae61523c52ec",
+              "name": "research_depth",
+              "value": "={{Number($json.headers.research_depth || 3)}}",
+              "type": "number"
+            },
+            {
+              "id": "1e1fbba6-f385-4507-afb0-aa6b7a5dae18",
+              "name": "include_sources",
+              "value": "={{String($json.headers.include_sources ?? 'true').toLowerCase() === 'true'}}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -624,
+        608
+      ],
+      "id": "b6a3daf7-4cbc-4a85-9764-1c6e099fdfea",
+      "name": "Normalize Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Forecast question:\n{{ $('Normalize Input').item.json.question }}\n\nRequested research depth:\n{{ $('Normalize Input').item.json.research_depth }} out of 5\n\nYour task is to research this forecasting question according to the requested research depth and produce the structured evidence package defined in your system instructions.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=# ROLE\n\nYou are Brighu, an evidence research agent supporting a forecasting system.\n\nYour job is to research the user's forecasting question and produce a balanced, factual, evidence-based research package for a downstream evaluation model.\n\nYou are NOT the forecasting model.\n\nDo not make the final YES/NO prediction.\nDo not assign a final probability.\nDo not express your own overall judgment about whether the proposition will occur.\n\n# CORE PRINCIPLE\n\nTreat the user's question as a proposition to be investigated.\n\nDo not assume that the proposition is true or false.\n\nReturn a null proposition if there is the user did not provide any proposition or question to evaluate.\n\nYour responsibility is to gather and organize the best available evidence so that a downstream evaluation model can assess the proposition.\n\n# RESEARCH DEPTH\n\nThe requested research depth determines the maximum research effort.\n\nResearch depth:\n\n1 = Quick research\n2 = Basic research\n3 = Standard research\n4 = Deep research\n5 = Very deep research\n\nAt lower depths:\n- Prioritize the most important and authoritative sources.\n- Focus on the strongest evidence.\n- Avoid unnecessary searches.\n\nAt higher depths:\n- Investigate additional independent sources.\n- Search more broadly for relevant evidence.\n- Actively look for contradictory evidence.\n- Investigate important uncertainties and unresolved questions.\n- Seek independent corroboration of important claims.\n\nDo not stop at the first supporting result.\n\nDo not continue searching merely to increase the number of sources when the evidence is already sufficiently comprehensive for the requested research depth.\n\n# BALANCED RESEARCH\n\nResearch both sides of the proposition:\n\n1. Evidence supporting the proposition\n2. Evidence contradicting the proposition\n\nActively search for evidence that could falsify or weaken the proposition.\n\nDo not selectively search only for information that confirms an initial interpretation.\n\nIf the available evidence is predominantly one-sided, report that fact rather than artificially creating balance.\n\n# SOURCE PRIORITY\n\nPrioritize sources approximately in this order:\n\n1. Primary and authoritative sources\n2. Official documents, filings, statements, datasets, and reports\n3. High-quality independent reporting\n4. Independent expert analysis\n5. Other relevant sources\n\nUse multiple independent sources when practical, especially for important claims.\n\nDo not treat multiple articles that simply repeat the same underlying source as independent corroboration.\n\n# TEMPORAL REASONING\n\nPay close attention to dates.\n\nDistinguish:\n- Current information\n- Historical information\n- Information relevant to the forecast horizon\n- Information that may have become outdated\n\nPrefer recent information when the question concerns a future event.\n\nDo not use historical information as if it were current.\n\nConsider whether new information may have changed the significance of older evidence.\n\n# FORECAST HORIZON\n\nIdentify the forecast horizon when it is explicitly stated or can be reliably inferred.\n\nIf the question contains a specific deadline, preserve it exactly.\n\nIf no meaningful forecast horizon can be established, report that fact.\n\nDo not invent a deadline.\n\n# EVIDENCE\n\nFor each important piece of evidence, identify:\n\n- The factual claim\n- Why it is relevant\n- The source\n- The source URL\n- Publication date, when available\n\nDistinguish factual evidence from:\n- Opinions\n- Analyst forecasts\n- Predictions\n- Speculation\n- Claims made by interested parties\n\nDo not present opinions or forecasts as established facts.\n\n# UNCERTAINTY\n\nIdentify important:\n\n- Unknowns\n- Missing information\n- Conflicting evidence\n- Assumptions\n- Dependencies\n- Factors that could materially change the outcome\n\nIf reliable evidence is insufficient, explicitly say so.\n\nDo not fill gaps with speculation.\n\n# SOURCE INTEGRITY\n\nDo not manufacture:\n\n- Facts\n- Sources\n- URLs\n- Publication dates\n- Quotes\n- Statistics\n- Claims\n\nDo not invent missing source information.\n\nIf a publication date is unavailable, return an empty string.\n\nIf a source cannot be reliably identified, do not present it as a verified source.\n\nRESEARCH SUFFICIENCY\n\nAfter completing the research, determine whether the retrieved evidence is sufficient for a responsible downstream evaluation.\n\nSet research_sufficient to true only when there is enough relevant, reasonably current, source-backed evidence to evaluate the proposition.\n\nConsider:\n\n- relevance to the exact proposition\n- recency relative to the forecast horizon\n- source credibility\n- whether the sources contain substantive evidence rather than merely mentioning the topic\n- important evidence supporting the proposition\n- important evidence contradicting the proposition, when reasonably available\n- major unresolved information gaps\n\nDo not require evidence on both sides when meaningful evidence on one side genuinely dominates the available information.\n\nSet research_sufficient to false when the research is sparse, stale, poorly sourced, irrelevant, or leaves a significant information gap that additional web research could reasonably address.\n\nIf research_sufficient is true, research_gap may be an empty string.\n\nWhen research_sufficient is false, describe the specific missing information in research_gap.\n\nDo not make a forecast or assign a probability when determining research sufficiency.\n\n# OUTPUT\n\nYour final output must contain:\n\n- normalized proposition\n- forecast horizon, if identifiable\n- supporting evidence\n- contradicting evidence\n- key uncertainties\n- sources used\n\nReturn only the structured research output required by the output schema.\n\nEvery factual claim based on web research should include its source title, URL, and publication date when available.\n\nDo not include a final YES/NO prediction.\n\nDo not include a final probability.\n\nDo not include a recommendation.\n\nA downstream evaluation model will evaluate the evidence.\n\n# CURRENT DATE AND TIME\n\nToday's Date and Time:\n{{ $now.setZone('America/New_York').toLocaleString() }}\n\nMachine Timestamp:\n{{ $now.toISO() }}\n\nDay of the Week:\n{{ $now.setZone('America/New_York').toFormat('cccc') }}",
+          "maxIterations": "={{ $('Normalize Input').item.json.research_depth }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -112,
+        480
+      ],
+      "id": "ae7d4673-a5e0-43f3-a413-3bad1550e8f1",
+      "name": "Research AI Agent",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Query', ``, 'string') }}",
+        "options": {
+          "topic": "general",
+          "search_depth": "advanced",
+          "max_results": 5
+        }
+      },
+      "type": "@tavily/n8n-nodes-tavily.tavilyTool",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        720
+      ],
+      "id": "e70c1e3c-53dd-40ee-84e5-f529f4e37570",
+      "name": "Search in Tavily",
+      "credentials": {
+        "tavilyApi": {
+          "id": "SGT5lrIwFrstUb57",
+          "name": "Tavily account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"normalized_proposition\": \"string\",\n  \"forecast_horizon\": \"string\",\n  \"supporting_evidence\": [\n    {\n      \"claim\": \"string\",\n      \"source\": \"string\",\n      \"url\": \"string\",\n      \"publication_date\": \"string\"\n    }\n  ],\n  \"contradicting_evidence\": [\n    {\n      \"claim\": \"string\",\n      \"source\": \"string\",\n      \"url\": \"string\",\n      \"publication_date\": \"string\"\n    }\n  ],\n  \"key_uncertainties\": [\n    \"string\"\n  ],\n  \"sources_used\": [\n    {\n      \"title\": \"string\",\n      \"url\": \"string\",\n      \"publication_date\": \"string\"\n    }\n  ],\n  \"research_sufficient\": \"boolean\",\n  \"research_gap\": \"string\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        720
+      ],
+      "id": "a496da70-d8cb-4814-98a7-1cc6480cb039",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudflare.com/client/v4/accounts/cd762ebcfd0159a42d27377c4b67801e/ai/run",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[REDACTED-AUTHORIZATION]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.jev_request }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        1984,
+        224
+      ],
+      "id": "85fa1e6f-7626-440f-9fb1-cc48d5cf4e7a",
+      "name": "Jev Evaluation",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "tableId": "forecast_requests",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "=question",
+              "fieldValue": "={{$json.question}}"
+            },
+            {
+              "fieldId": "=research_depth",
+              "fieldValue": "={{$json.research_depth}}"
+            },
+            {
+              "fieldId": "include_sources",
+              "fieldValue": "={{$json.include_sources}}"
+            },
+            {
+              "fieldId": "status",
+              "fieldValue": "researching"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        608
+      ],
+      "id": "e46994df-0223-47d9-9871-ae66b5b0ae61",
+      "name": "Create Forecast Record",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tWTqrf6QJy4O38Dd",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const research = $json;\nconst forecast = $('Create Forecast Record').item.json;\n\nreturn {\n  json: {\n    forecast_id: forecast.id,\n\n    research: research,\n\n    jev_request: {\n      model: \"typesafe/jev\",\n      input: {\n        state: JSON.stringify({\n          proposition: research.normalized_proposition,\n          forecast_horizon: research.forecast_horizon,\n          supporting_evidence: research.supporting_evidence,\n          contradicting_evidence: research.contradicting_evidence,\n          uncertainties: research.key_uncertainties,\n          sources: research.sources_used\n        }),\n        questions: {\n          outcome: {\n            type: \"noul\",\n            instructions: \"Based on the research evidence, does the proposition occur?\"\n          },\n          evidence_strength: {\n            type: \"score\",\n            instructions: \"How strongly does the evidence support the proposition?\",\n            criteria: [\n              \"Strongly against\",\n              \"Somewhat against\",\n              \"Neutral or insufficient\",\n              \"Somewhat supports\",\n              \"Strongly supports\"\n            ]\n          },\n          evidence_quality: {\n            type: \"score\",\n            instructions: \"How high is the overall quality of the evidence?\",\n            criteria: [\n              \"Very poor\",\n              \"Poor\",\n              \"Moderate\",\n              \"Good\",\n              \"Very good\"\n            ]\n          },\n          contradictory_evidence: {\n            type: \"noul\",\n            instructions: \"Is there substantial evidence contradicting the proposition?\"\n          }\n        }\n      }\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        288
+      ],
+      "id": "1d453f7c-4e0c-4227-ac72-a2f3b7a63861",
+      "name": "Prepare Jev Request",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const jev = $json.result.result;\nconst answers = jev.answers;\n\n// Get the preserved context from the node immediately before Jev\nconst prepared = $('Prepare Jev Request').item.json;\n\nreturn {\n  json: {\n    forecast_id: prepared.forecast_id,\n\n    proposition: prepared.research.normalized_proposition,\n    forecast_horizon: prepared.research.forecast_horizon,\n\n    research: prepared.research,\n\n    prediction: answers.outcome.noul,\n\n    evidence_strength: answers.evidence_strength.score,\n    evidence_strength_confidence: answers.evidence_strength.confidence,\n\n    evidence_quality: answers.evidence_quality.score,\n    evidence_quality_confidence: answers.evidence_quality.confidence,\n\n    contradictory_evidence: answers.contradictory_evidence.noul,\n\n    jev_response: $json.result,\n\n    jev_model: jev.model,\n    jev_usage: jev.usage\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        224
+      ],
+      "id": "32c2720b-f54d-4ee6-b534-e1ceb99350fe",
+      "name": "Build Forecast Result"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "forecast_requests",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $json.forecast_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "completed"
+            },
+            {
+              "fieldId": "research",
+              "fieldValue": "={{$json.research}}"
+            },
+            {
+              "fieldId": "jev_response",
+              "fieldValue": "={{$json.jev_response}}"
+            },
+            {
+              "fieldId": "prediction",
+              "fieldValue": "={{$json.prediction}}"
+            },
+            {
+              "fieldId": "probability",
+              "fieldValue": "={{$json.prediction}}"
+            },
+            {
+              "fieldId": "evidence_strength",
+              "fieldValue": "={{$json.evidence_strength}}"
+            },
+            {
+              "fieldId": "evidence_quality",
+              "fieldValue": "={{$json.evidence_quality}}"
+            },
+            {
+              "fieldId": "sources",
+              "fieldValue": "={{$json.research.sources_used}}"
+            },
+            {
+              "fieldId": "completed_at",
+              "fieldValue": "={{$now.toISO()}}"
+            },
+            {
+              "fieldId": "jev_request",
+              "fieldValue": "=Proposition: {{ $json.proposition }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        224
+      ],
+      "id": "7ef57722-b9e4-4a85-accb-c5e83403aede",
+      "name": "Update Forecast Record",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tWTqrf6QJy4O38Dd",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $json;\n\nconst response = {\n  request_id: result.id,\n  question: result.question,\n  proposition: result.research.normalized_proposition,\n\n  prediction: Number(result.prediction),\n  probability: Number(result.probability),\n\n  evidence_strength: Number(result.evidence_strength),\n  evidence_quality: Number(result.evidence_quality),\n\n  contradictory_evidence: Number(\n    result.jev_response.result.answers.contradictory_evidence.noul\n  ),\n\n  completed_at: result.completed_at,\n\n  research: result.research\n};\n\nif (result.include_sources) {\n  response.sources = result.sources || [];\n}\n\nreturn {\n  json: response\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2656,
+        224
+      ],
+      "id": "4506e387-498b-409f-a353-471d72bad2d6",
+      "name": "Build Final Response"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are the explanation layer of an evidence-based forecasting system.\n\nYour job is to explain the completed forecast using ONLY the supplied forecast data and research.\n\nThe probability and evidence assessments have already been produced by Jev. You are a reporting layer, not an evaluation layer.\n\nSTRICT RULES:\n\n- Do not calculate, modify, reinterpret, or replace the Jev probability.\n- Do not produce an alternative probability.\n- Do not perform additional research.\n- Do not introduce facts that are not present in the supplied research.\n- Do not infer facts or conclusions that are not explicitly supported by the supplied research.\n- Do not infer the meaning of a Jev score beyond its supplied legend.\n- Report Jev scores and their legends faithfully.\n- Do not turn uncertainty into certainty.\n- Clearly distinguish documented evidence from uncertainty.\n- Do not claim that evidence proves a future event.\n- If contradictory evidence is empty, explicitly say that no contradictory evidence was identified in the supplied research.\n- Keep the explanation concise but informative.\n\nExplain:\n\n1. The exact proposition evaluated.\n2. The Jev probability.\n3. The main supporting evidence.\n4. The main contradictory evidence, if any.\n5. The important uncertainties and limitations.\n6. The Jev evidence-strength score, using its supplied legend.\n7. The Jev evidence-quality score, using its supplied legend.\n8. The contradictory-evidence Noul value, without assigning it an interpretation beyond what the supplied data establishes.\n\nWhen discussing a score, do not invent a qualitative label unless that label is explicitly provided by the Jev legend.\n\nReturn ONLY the explanation text. Do not return JSON.",
+              "role": "model"
+            },
+            {
+              "content": "=Forecast proposition:\n{{ $json.research.normalized_proposition }}\n\nJev probability:\n{{ $json.probability }}\n\nEvidence strength:\n{{ $json.evidence_strength }} out of 4\n\nEvidence quality:\n{{ $json.evidence_quality }} out of 4\n\nContradictory evidence:\n{{ $json.contradictory_evidence }}\n\nResearch:\n{{ JSON.stringify($json.research) }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        2880,
+        224
+      ],
+      "id": "8fe787cc-ee9c-4c4f-a520-981f495d6a50",
+      "name": "Forecast Explanation",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const forecast = $('Build Final Response').item.json;\nconst explanation = $json.content?.parts?.[0]?.text || '';\n\nconst probability = Number(forecast.probability);\nconst probabilityPercent = Math.round(probability * 100);\n\nfunction extractSection(text, startPatterns, endPatterns) {\n  let start = -1;\n\n  for (const pattern of startPatterns) {\n    const match = text.match(pattern);\n\n    if (match) {\n      start = match.index + match[0].length;\n      break;\n    }\n  }\n\n  if (start === -1) return '';\n\n  let end = text.length;\n\n  for (const pattern of endPatterns) {\n    const remaining = text.slice(start);\n    const match = remaining.match(pattern);\n\n    if (match) {\n      end = Math.min(end, start + match.index);\n    }\n  }\n\n  return text.slice(start, end).trim();\n}\n\nfunction cleanText(text) {\n  return text\n    .replace(/\\*\\*/g, '')\n    .replace(/^\\s*\\d+\\.\\s*/gm, '')\n    .trim();\n}\n\n// Common Jev section headings.\n// Gemini may return these with or without numbering and\n// with or without \"The\".\nconst jevEvidenceStrengthHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Jev Evidence-Strength Score\\s*:?\\s*/i;\n\nconst jevEvidenceQualityHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Jev Evidence-Quality Score\\s*:?\\s*/i;\n\nconst contradictoryEvidenceNoulHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Contradictory-Evidence Noul Value\\s*:?\\s*/i;\n\nconst jevScoresHeading =\n  /(?:\\d+\\.\\s*)?(?:The\\s+)?Jev Scores\\s*:?\\s*/i;\n\nconst supportingEvidence = cleanText(\n  extractSection(\n    explanation,\n    [/Main Supporting Evidence\\s*:?\\s*/i],\n    [\n      /Main Contradictory Evidence\\s*:?\\s*/i,\n      /Important Uncertainties and Limitations\\s*:?\\s*/i,\n      jevScoresHeading,\n      jevEvidenceStrengthHeading,\n      jevEvidenceQualityHeading,\n      contradictoryEvidenceNoulHeading\n    ]\n  )\n);\n\nconst contradictoryEvidence = cleanText(\n  extractSection(\n    explanation,\n    [/Main Contradictory Evidence\\s*:?\\s*/i],\n    [\n      /Important Uncertainties and Limitations\\s*:?\\s*/i,\n      jevScoresHeading,\n      jevEvidenceStrengthHeading,\n      jevEvidenceQualityHeading,\n      contradictoryEvidenceNoulHeading\n    ]\n  )\n);\n\nconst uncertainties = cleanText(\n  extractSection(\n    explanation,\n    [/Important Uncertainties and Limitations\\s*:?\\s*/i],\n    [\n      jevScoresHeading,\n      jevEvidenceStrengthHeading,\n      jevEvidenceQualityHeading,\n      contradictoryEvidenceNoulHeading,\n      /EVIDENCE QUALITY\\s*:?\\s*/i\n    ]\n  )\n);\n\nlet output = `EVALUATED PROPOSITION:\n\n${forecast.proposition}\n\nFORECAST:\n\n${probabilityPercent}% probability\n\nSUPPORTING EVIDENCE:\n\n${supportingEvidence || 'No supporting evidence was identified.'}\n\nCONTRADICTORY EVIDENCE:\n\n${contradictoryEvidence || 'No contradictory evidence was identified.'}\n\nUNCERTAINTIES:\n\n${uncertainties || 'No additional uncertainties were identified.'}\n\nEVIDENCE QUALITY:\n\nStrength: ${Number(forecast.evidence_strength).toFixed(2)} / 4\nQuality: ${Number(forecast.evidence_quality).toFixed(2)} / 4\nContradictory Evidence: ${Number(forecast.contradictory_evidence).toFixed(2)} / 1`;\n\nif (forecast.sources && forecast.sources.length > 0) {\n  output += `\n\nSOURCES:\n`;\n\n  for (const source of forecast.sources) {\n    const title = source.title || source.source_title || 'Source';\n    const url = source.url || '';\n\n    output += `\\n• ${title}`;\n\n    if (url) {\n      output += `\\n  ${url}`;\n    }\n  }\n}\n\nreturn {\n  json: {\n    output\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3232,
+        144
+      ],
+      "id": "72cca35f-1d47-4900-9918-4a5f5e4545c5",
+      "name": "Build Completed Forecast"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "forecast_requests",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Prepare Jev Request').item.json.forecast_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "final_output",
+              "fieldValue": "={{ $json.output }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        3456,
+        144
+      ],
+      "id": "943a0ad2-ba2c-406d-b05c-35c05ce6f19e",
+      "name": "Save Final Output",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "tWTqrf6QJy4O38Dd",
+          "name": "Supabase account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    json: {\n      output: $('Build Completed Forecast').first().json.output\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        96
+      ],
+      "id": "fc72cccf-8346-46e1-af2a-fca86402702e",
+      "name": "Return Response"
+    },
+    {
+      "parameters": {
+        "jsCode": "const research = $json.output;\n\nreturn {\n  json: {\n    ...research,\n    research_sufficient: research.research_sufficient === true,\n    research_gap: research.research_gap || ''\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        512
+      ],
+      "id": "59489d18-f065-4056-87c2-c8edd5f00d95",
+      "name": "Check Research Sufficiency"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b41316dd-8e71-4ebd-a6d8-5e67782d333f",
+              "leftValue": "={{ $json.research_sufficient }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        512
+      ],
+      "id": "95c6af5b-f219-423d-915f-fbf53d37f744",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an evidence retrieval assistant for an evidence-based forecasting system.\n\nYour task is to find additional, source-backed evidence for a forecasting proposition when the primary research is insufficient.\n\nYou are NOT the forecasting model.\n\nSTRICT RULES:\n\n- Do not predict the outcome.\n- Do not provide a probability.\n- Do not provide your own assessment of whether the proposition will occur.\n- Do not turn your interpretation into evidence.\n- Use Google Search to find current, relevant information.\n- Prefer authoritative and primary sources when available.\n- Pay close attention to the forecast horizon.\n- Look for both supporting and contradicting evidence where relevant.\n- Return only evidence that can be attributed to a retrieved source.\n- Do not invent facts, sources, URLs, dates, or quotations.\n- Do not treat another AI's opinion as evidence.\n- Do not repeat existing evidence unless a different source provides materially new information.\n- If you cannot find meaningful additional evidence, return empty evidence.\n\nFor every source-backed evidence item, explicitly provide the canonical URL of the source page that you retrieved through Google Search.\n\nThe canonical URL must be the actual source website URL, not a Google grounding URL, Vertex AI grounding URL, redirect URL, or search-results URL.\n\nReturn the evidence in this plain-text format:\n\nSUPPORTING EVIDENCE:\n- Claim: [source-backed factual claim]\n  Source: [source title]\n  URL: [canonical source URL]\n  Date: [publication or update date if available]\n  Relevance: [why this evidence is relevant]\n\nCONTRADICTING EVIDENCE:\n- Claim: [source-backed factual claim]\n  Source: [source title]\n  URL: [canonical source URL]\n  Date: [publication or update date if available]\n  Relevance: [why this evidence is relevant]\n\nIf there is no meaningful evidence in a category, leave that category empty.\n\nDo not provide any forecast, probability, recommendation, or conclusion.",
+              "role": "model"
+            },
+            {
+              "content": "=Forecast proposition:\n{{ $json.normalized_proposition }}\n\nForecast horizon:\n{{ $json.forecast_horizon }}\n\nWhy the primary research was considered insufficient:\n{{ $json.research_gap }}\n\nExisting supporting evidence:\n{{ JSON.stringify($json.supporting_evidence) }}\n\nExisting contradicting evidence:\n{{ JSON.stringify($json.contradicting_evidence) }}\n\nFind additional source-backed evidence that could help evaluate this proposition.\n\nDo not make a prediction or assign a probability."
+            }
+          ]
+        },
+        "jsonOutput": "",
+        "builtInTools": {
+          "googleSearch": true
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        688
+      ],
+      "id": "3758716a-8c41-4775-bdf5-11c3664d0888",
+      "name": "Gemini Research",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.content?.parts?.[0]?.text || '';\n\nconst supportingEvidence = [];\nconst contradictingEvidence = [];\n\nfunction parseEvidenceBlock(block) {\n  const results = [];\n\n  const items = block\n    .split(/\\n(?=-\\s*Claim:)/)\n    .map(item => item.trim())\n    .filter(Boolean);\n\n  for (const item of items) {\n    const claimMatch = item.match(\n      /-\\s*Claim:\\s*(.*?)(?=\\n\\s*Source:|\\n\\s*URL:|\\n\\s*Date:|\\n\\s*Relevance:|$)/s\n    );\n\n    const sourceMatch = item.match(\n      /Source:\\s*(.*?)(?=\\n\\s*URL:|\\n\\s*Date:|\\n\\s*Relevance:|$)/s\n    );\n\n    const urlMatch = item.match(\n      /URL:\\s*(https?:\\/\\/[^\\s]+)/i\n    );\n\n    const dateMatch = item.match(\n      /Date:\\s*(.*?)(?=\\n\\s*Relevance:|$)/s\n    );\n\n    const relevanceMatch = item.match(\n      /Relevance:\\s*(.*)$/s\n    );\n\n    const claim = claimMatch?.[1]?.trim() || '';\n    const source_title = sourceMatch?.[1]?.trim() || '';\n    const source_url = urlMatch?.[1]?.trim() || '';\n    const publication_date = dateMatch?.[1]?.trim() || '';\n    const relevance = relevanceMatch?.[1]?.trim() || '';\n\n    // Only accept evidence with a claim and a real URL.\n    if (claim && source_url) {\n      results.push({\n        claim,\n        source_title,\n        source_url,\n        publication_date,\n        relevance\n      });\n    }\n  }\n\n  return results;\n}\n\nconst supportingMatch = text.match(\n  /SUPPORTING EVIDENCE:\\s*([\\s\\S]*?)(?=\\n\\s*CONTRADICTING EVIDENCE:|$)/i\n);\n\nconst contradictingMatch = text.match(\n  /CONTRADICTING EVIDENCE:\\s*([\\s\\S]*)$/i\n);\n\nif (supportingMatch) {\n  supportingEvidence.push(\n    ...parseEvidenceBlock(supportingMatch[1])\n  );\n}\n\nif (contradictingMatch) {\n  contradictingEvidence.push(\n    ...parseEvidenceBlock(contradictingMatch[1])\n  );\n}\n\nreturn {\n  json: {\n    supporting_evidence: supportingEvidence,\n    contradicting_evidence: contradictingEvidence\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1312,
+        576
+      ],
+      "id": "aa871a8d-6072-4655-b530-8ca6a87d590c",
+      "name": "Normalize Gemini Evidence",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Check Research Sufficiency').item.json;\nconst gemini = $json;\n\nfunction normalizeEvidence(evidence) {\n  return {\n    claim: evidence.claim || evidence.factual_claim || '',\n    source_title: evidence.source_title || evidence.source || '',\n    source_url: evidence.source_url || evidence.url || '',\n    publication_date: evidence.publication_date || '',\n    relevance: evidence.relevance || evidence.relevant || ''\n  };\n}\n\nconst originalSupporting =\n  (original.supporting_evidence || []).map(normalizeEvidence);\n\nconst originalContradicting =\n  (original.contradicting_evidence || []).map(normalizeEvidence);\n\nconst geminiSupporting =\n  (gemini.supporting_evidence || []).map(normalizeEvidence);\n\nconst geminiContradicting =\n  (gemini.contradicting_evidence || []).map(normalizeEvidence);\n\nconst supporting_evidence = [\n  ...originalSupporting,\n  ...geminiSupporting\n];\n\nconst contradicting_evidence = [\n  ...originalContradicting,\n  ...geminiContradicting\n];\n\nconst sources_used = [\n  ...(original.sources_used || []).map(source => ({\n    title: source.title || source.source_title || '',\n    url: source.url || source.source_url || '',\n    publication_date: source.publication_date || ''\n  })),\n\n  ...[...geminiSupporting, ...geminiContradicting]\n    .filter(e => e.source_url)\n    .map(e => ({\n      title: e.source_title,\n      url: e.source_url,\n      publication_date: e.publication_date\n    }))\n];\n\n// Determine whether the combined research actually contains\n// meaningful source-backed evidence.\nconst hasSupportingEvidence = supporting_evidence.some(\n  e => e.claim && e.source_url\n);\n\nconst hasContradictingEvidence = contradicting_evidence.some(\n  e => e.claim && e.source_url\n);\n\nconst hasSources = sources_used.some(\n  source => source.url\n);\n\nconst research_sufficient =\n  hasSources &&\n  (hasSupportingEvidence || hasContradictingEvidence);\n\nreturn {\n  json: {\n    normalized_proposition: original.normalized_proposition,\n\n    forecast_horizon: original.forecast_horizon,\n\n    supporting_evidence,\n\n    contradicting_evidence,\n\n    key_uncertainties: original.key_uncertainties || [],\n\n    sources_used,\n\n    research_sufficient,\n\n    research_gap: research_sufficient\n      ? ''\n      : 'No meaningful source-backed evidence was found after the additional research.',\n\n    research_enhanced_by_gemini: true\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1536,
+        512
+      ],
+      "id": "8866cc96-e413-43b7-a1f4-f9e2f5030c03",
+      "name": "Combine Research Evidence",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    output: \"Sorry, something went wrong while processing your request. Please try again.\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3680,
+        624
+      ],
+      "id": "3c734275-c4f8-4473-8e10-0777b6745f96",
+      "name": "Build Error Response"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "e1f2b145-9ad1-4120-9ca9-40d30ebec891",
+              "leftValue": "={{ $json.output.normalized_proposition }}",
+              "rightValue": "=\"null\"",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        288,
+        416
+      ],
+      "id": "3ce4ea0a-6abd-43c9-bdc1-38f8ac0f7c38",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    output: \"No question or proposition was provided. Please try again.\"\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        320
+      ],
+      "id": "ca189322-d3b0-498f-b425-13af060c2401",
+      "name": "Return Response1"
+    }
+  ],
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Research AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Input": {
+      "main": [
+        [
+          {
+            "node": "Create Forecast Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search in Tavily": {
+      "ai_tool": [
+        [
+          {
+            "node": "Research AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Research AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Jev Evaluation": {
+      "main": [
+        [
+          {
+            "node": "Build Forecast Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Forecast Record": {
+      "main": [
+        [
+          {
+            "node": "Research AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Jev Request": {
+      "main": [
+        [
+          {
+            "node": "Jev Evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Forecast Result": {
+      "main": [
+        [
+          {
+            "node": "Update Forecast Record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Forecast Record": {
+      "main": [
+        [
+          {
+            "node": "Build Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Final Response": {
+      "main": [
+        [
+          {
+            "node": "Forecast Explanation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Forecast Explanation": {
+      "main": [
+        [
+          {
+            "node": "Build Completed Forecast",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Completed Forecast": {
+      "main": [
+        [
+          {
+            "node": "Save Final Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Final Output": {
+      "main": [
+        [
+          {
+            "node": "Return Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Research Sufficiency": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Prepare Jev Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gemini Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Research": {
+      "main": [
+        [
+          {
+            "node": "Normalize Gemini Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Gemini Evidence": {
+      "main": [
+        [
+          {
+            "node": "Combine Research Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Research Evidence": {
+      "main": [
+        [
+          {
+            "node": "Prepare Jev Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Return Response1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Research Sufficiency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "content-type": "application/json; charset=utf-8",
+            "research_depth": "4",
+            "include_sources": "true",
+            "user-agent": "Dalvik/2.1.0 (Linux; U; Android 17; Pixel 9 Pro XL Build/CP2A.260805.005)",
+            "host": "192.168.86.58:5678",
+            "connection": "Keep-Alive",
+            "accept-encoding": "gzip",
+            "content-length": "31"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "question": "hi",
+            "voice": false
+          },
+          "webhookUrl": "http://rudraghora:5678/webhook/brighu",
+          "executionMode": "production"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Check Research Sufficiency": [
+      {
+        "json": {
+          "research_sufficient": false,
+          "forecast_horizon": null,
+          "supporting_evidence": [],
+          "contradicting_evidence": [],
+          "research_gap": "The user has not provided a forecasting proposition. I need a clear statement or question that can be researched and evaluated.",
+          "key_uncertainties": [
+            "The user prompt \"hi\" does not contain a proposition or question to evaluate."
+          ],
+          "sources_used": [],
+          "normalized_proposition": null
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "c77ae7f7-1c4c-45bd-860c-5b2337a5a8a1",
+  "activeVersionId": "c77ae7f7-1c4c-45bd-860c-5b2337a5a8a1",
+  "versionCounter": 182,
+  "triggerCount": 2,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-21T17:19:20.603Z",
+      "createdAt": "2026-09-21T17:19:20.603Z",
+      "role": "workflow:owner",
+      "workflowId": "MpzMosAO0JSD0kJQ",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version c77ae7f7",
+    "description": ""
+  }
+}

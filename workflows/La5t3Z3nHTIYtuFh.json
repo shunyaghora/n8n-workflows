@@ -1,1 +1,358 @@
-{"updatedAt":"2026-09-08T23:41:09.704Z","createdAt":"2026-08-31T05:35:37.235Z","id":"La5t3Z3nHTIYtuFh","name":"Smart Water Weather Delay","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"resource":"service","operation":"call","domain":"select","service":"select_option","serviceAttributes":{"attributes":[{"name":"entity_id","value":"select.smart_water_timer_weather_delay"},{"name":"option","value":"={{ $json.delay }}"}]}},"type":"n8n-nodes-base.homeAssistant","typeVersion":1,"position":[544,224],"id":"c68487b7-0519-47e2-a943-d705074da022","name":"Call a service","alwaysOutputData":true,"credentials":{"homeAssistantApi":{"id":"ZtKCm3AkMJ1aZH18","name":"Home Assistant account"}}},{"parameters":{"method":"POST","url":"http://rudraghora:8123/api/services/weather/get_forecasts?return_response","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Authorization","value":"[REDACTED-AUTHORIZATION]"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"{\n  \"entity_id\": \"weather.forecast_home\",\n  \"type\": \"hourly\"\n}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[96,224],"id":"d7a9c029-0343-464a-94e6-7a16f89f7c8c","name":"HTTP Request - HA Weather Forecast Service"},{"parameters":{"jsCode":"const forecast = $input.first().json\n  .service_response[\"weather.forecast_home\"].forecast;\n\n// Current time\nconst now = new Date();\n\n// Time boundaries\nconst in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);\nconst in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);\nconst in72h = new Date(now.getTime() + 72 * 60 * 60 * 1000);\n\n// Calculate total forecast rain in each window\nlet rain24 = 0;\nlet rain48 = 0;\nlet rain72 = 0;\n\nfor (const hour of forecast) {\n  const time = new Date(hour.datetime);\n  const rain = Number(hour.precipitation || 0);\n\n  if (time <= in72h) {\n    rain72 += rain;\n  }\n\n  if (time <= in48h) {\n    rain48 += rain;\n  }\n\n  if (time <= in24h) {\n    rain24 += rain;\n  }\n}\n\n// Minimum meaningful rainfall threshold (mm)\nconst threshold = 5.0;\n\nlet delay = \"cancel\";\n\nif (rain24 >= threshold) {\n  delay = \"24h\";\n} else if (rain48 >= threshold) {\n  delay = \"48h\";\n} else if (rain72 >= threshold) {\n  delay = \"72h\";\n}\n\nreturn [\n  {\n    json: {\n      delay,\n      rain24,\n      rain48,\n      rain72,\n    },\n  },\n];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[320,224],"id":"01dd8fb3-e7b5-4b18-a727-2c7f0bc5b393","name":"Code in JavaScript"},{"parameters":{"rule":{"interval":[{"triggerAtHour":5},{}]}},"type":"n8n-nodes-base.scheduleTrigger","typeVersion":1.3,"position":[-128,224],"id":"7028b474-9cb7-47d5-bceb-73b2a03f722c","name":"Schedule Trigger"},{"parameters":{"sendTo":"shunyaghora@gmail.com","subject":"=Enabled for {{ $('Code in JavaScript').item.json.delay }}","emailType":"text","message":" ","options":{"appendAttribution":false,"senderName":"N8N Weather Delay"}},"type":"n8n-nodes-base.gmail","typeVersion":2.2,"position":[992,128],"id":"c659dc9b-5565-44a6-a91f-a0cc97228a0d","name":"Send a message","webhookId":"adc10b75-2fc3-4221-8a0c-5f1feb74ed87","credentials":{"gmailOAuth2":{"id":"HeLEtLakvGfkOGXA","name":"Gmail account"}}},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"25147e46-e5b7-46b8-931e-a91a2a3e6a5b","leftValue":"={{ $('Code in JavaScript').item.json.delay }}","rightValue":"cancel","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[768,224],"id":"cd8be2be-ed28-4f78-a511-404969dd4cb0","name":"If Delay = Cancel"},{"parameters":{"workflowId":{"__rl":true,"value":"hqbwpGGeB0wenpzQ","mode":"list","cachedResultUrl":"/workflow/hqbwpGGeB0wenpzQ","cachedResultName":"Phone Push Notification Sub-workflow"},"workflowInputs":{"mappingMode":"defineBelow","value":{"title":"N8N Weather Delay Alert","message":"=Enabled for {{ $('Code in JavaScript').item.json.delay }}"},"matchingColumns":[],"schema":[{"id":"title","displayName":"title","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string","removed":false},{"id":"message","displayName":"message","required":false,"defaultMatch":false,"display":true,"canBeUsedToMatch":true,"type":"string","removed":false}],"attemptToConvertTypes":false,"convertFieldsToString":true},"options":{}},"type":"n8n-nodes-base.executeWorkflow","typeVersion":1.3,"position":[992,320],"id":"1dbc16e4-a7e6-46a4-83dd-8b9434d83a2e","name":"Call 'Phone Push Notification Sub-workflow'"}],"connections":{"HTTP Request - HA Weather Forecast Service":{"main":[[{"node":"Code in JavaScript","type":"main","index":0}]]},"Code in JavaScript":{"main":[[{"node":"Call a service","type":"main","index":0}]]},"Schedule Trigger":{"main":[[{"node":"HTTP Request - HA Weather Forecast Service","type":"main","index":0}]]},"Call a service":{"main":[[{"node":"If Delay = Cancel","type":"main","index":0}]]},"If Delay = Cancel":{"main":[[],[{"node":"Send a message","type":"main","index":0},{"node":"Call 'Phone Push Notification Sub-workflow'","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate","availableInMCP":false},"staticData":{"node:Schedule Trigger":{"recurrenceRules":[null,null],"recurrenceRuleSignatures":[null,null]}},"meta":{"templateCredsSetupCompleted":true},"nodeGroups":[],"pinData":{"Schedule Trigger":[{"json":{"timestamp":"2026-09-02T05:00:56.056-07:00","Readable date":"September 2nd 2026, 5:00:56 am","Readable time":"5:00:56 am","Day of week":"Wednesday","Year":"2026","Month":"September","Day of month":"02","Hour":"05","Minute":"00","Second":"56","Timezone":"America/Los_Angeles (UTC-07:00)"},"pairedItem":{"item":0}}]},"versionId":"44ebe601-0ffb-413c-86a2-ebeac89e3e5c","activeVersionId":"44ebe601-0ffb-413c-86a2-ebeac89e3e5c","versionCounter":108,"triggerCount":1,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-08-31T05:35:37.253Z","createdAt":"2026-08-31T05:35:37.253Z","role":"workflow:owner","workflowId":"La5t3Z3nHTIYtuFh","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version 44ebe601","description":""}}
+{
+  "updatedAt": "2026-09-08T23:41:09.704Z",
+  "createdAt": "2026-08-31T05:35:37.235Z",
+  "id": "La5t3Z3nHTIYtuFh",
+  "name": "Smart Water Weather Delay",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "service",
+        "operation": "call",
+        "domain": "select",
+        "service": "select_option",
+        "serviceAttributes": {
+          "attributes": [
+            {
+              "name": "entity_id",
+              "value": "select.smart_water_timer_weather_delay"
+            },
+            {
+              "name": "option",
+              "value": "={{ $json.delay }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        544,
+        224
+      ],
+      "id": "c68487b7-0519-47e2-a943-d705074da022",
+      "name": "Call a service",
+      "alwaysOutputData": true,
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "ZtKCm3AkMJ1aZH18",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://rudraghora:8123/api/services/weather/get_forecasts?return_response",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[REDACTED-AUTHORIZATION]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"entity_id\": \"weather.forecast_home\",\n  \"type\": \"hourly\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        96,
+        224
+      ],
+      "id": "d7a9c029-0343-464a-94e6-7a16f89f7c8c",
+      "name": "HTTP Request - HA Weather Forecast Service"
+    },
+    {
+      "parameters": {
+        "jsCode": "const forecast = $input.first().json\n  .service_response[\"weather.forecast_home\"].forecast;\n\n// Current time\nconst now = new Date();\n\n// Time boundaries\nconst in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);\nconst in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);\nconst in72h = new Date(now.getTime() + 72 * 60 * 60 * 1000);\n\n// Calculate total forecast rain in each window\nlet rain24 = 0;\nlet rain48 = 0;\nlet rain72 = 0;\n\nfor (const hour of forecast) {\n  const time = new Date(hour.datetime);\n  const rain = Number(hour.precipitation || 0);\n\n  if (time <= in72h) {\n    rain72 += rain;\n  }\n\n  if (time <= in48h) {\n    rain48 += rain;\n  }\n\n  if (time <= in24h) {\n    rain24 += rain;\n  }\n}\n\n// Minimum meaningful rainfall threshold (mm)\nconst threshold = 5.0;\n\nlet delay = \"cancel\";\n\nif (rain24 >= threshold) {\n  delay = \"24h\";\n} else if (rain48 >= threshold) {\n  delay = \"48h\";\n} else if (rain72 >= threshold) {\n  delay = \"72h\";\n}\n\nreturn [\n  {\n    json: {\n      delay,\n      rain24,\n      rain48,\n      rain72,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        224
+      ],
+      "id": "01dd8fb3-e7b5-4b18-a727-2c7f0bc5b393",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 5
+            },
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -128,
+        224
+      ],
+      "id": "7028b474-9cb7-47d5-bceb-73b2a03f722c",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "sendTo": "shunyaghora@gmail.com",
+        "subject": "=Enabled for {{ $('Code in JavaScript').item.json.delay }}",
+        "emailType": "text",
+        "message": " ",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "N8N Weather Delay"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        128
+      ],
+      "id": "c659dc9b-5565-44a6-a91f-a0cc97228a0d",
+      "name": "Send a message",
+      "webhookId": "adc10b75-2fc3-4221-8a0c-5f1feb74ed87",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HeLEtLakvGfkOGXA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "25147e46-e5b7-46b8-931e-a91a2a3e6a5b",
+              "leftValue": "={{ $('Code in JavaScript').item.json.delay }}",
+              "rightValue": "cancel",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        224
+      ],
+      "id": "cd8be2be-ed28-4f78-a511-404969dd4cb0",
+      "name": "If Delay = Cancel"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "hqbwpGGeB0wenpzQ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/hqbwpGGeB0wenpzQ",
+          "cachedResultName": "Phone Push Notification Sub-workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "N8N Weather Delay Alert",
+            "message": "=Enabled for {{ $('Code in JavaScript').item.json.delay }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        320
+      ],
+      "id": "1dbc16e4-a7e6-46a4-83dd-8b9434d83a2e",
+      "name": "Call 'Phone Push Notification Sub-workflow'"
+    }
+  ],
+  "connections": {
+    "HTTP Request - HA Weather Forecast Service": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Call a service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - HA Weather Forecast Service",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call a service": {
+      "main": [
+        [
+          {
+            "node": "If Delay = Cancel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Delay = Cancel": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Call 'Phone Push Notification Sub-workflow'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": {
+    "node:Schedule Trigger": {
+      "recurrenceRules": [
+        null,
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null,
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2026-09-02T05:00:56.056-07:00",
+          "Readable date": "September 2nd 2026, 5:00:56 am",
+          "Readable time": "5:00:56 am",
+          "Day of week": "Wednesday",
+          "Year": "2026",
+          "Month": "September",
+          "Day of month": "02",
+          "Hour": "05",
+          "Minute": "00",
+          "Second": "56",
+          "Timezone": "America/Los_Angeles (UTC-07:00)"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "44ebe601-0ffb-413c-86a2-ebeac89e3e5c",
+  "activeVersionId": "44ebe601-0ffb-413c-86a2-ebeac89e3e5c",
+  "versionCounter": 108,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-08-31T05:35:37.253Z",
+      "createdAt": "2026-08-31T05:35:37.253Z",
+      "role": "workflow:owner",
+      "workflowId": "La5t3Z3nHTIYtuFh",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 44ebe601",
+    "description": ""
+  }
+}

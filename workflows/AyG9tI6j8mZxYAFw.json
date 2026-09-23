@@ -1,1 +1,440 @@
-{"updatedAt":"2026-09-16T05:56:19.590Z","createdAt":"2026-09-16T04:52:04.363Z","id":"AyG9tI6j8mZxYAFw","name":"N8N Gemini TTS v1","description":null,"active":false,"isArchived":false,"nodes":[{"parameters":{"pollTimes":{"item":[{"mode":"everyMinute"}]},"triggerOn":"specificFolder","folderToWatch":{"__rl":true,"value":"1DfGForEwVkGuBJr2Lsdv1VGrJRrrJ6lS","mode":"id"},"event":"fileCreated","options":{}},"id":"3f59da10-8b52-4c97-95de-8e3881efbf7e","name":"Google Drive Trigger","type":"n8n-nodes-base.googleDriveTrigger","typeVersion":1,"position":[0,16],"credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"conditions":{"options":{"caseSensitive":false,"leftValue":"","typeValidation":"strict","version":1},"conditions":[{"leftValue":"={{ $json.mimeType }}","rightValue":"text/plain","operator":{"type":"string","operation":"equals"}}],"combinator":"and"},"options":{}},"id":"a9dad5ef-9f6b-493b-b7d1-febd651031f4","name":"Only TXT Files","type":"n8n-nodes-base.if","typeVersion":2.2,"position":[224,16]},{"parameters":{"operation":"text","destinationKey":"text","options":{}},"id":"781a0a26-7b95-43d9-91d8-6a580092305d","name":"Extract Text","type":"n8n-nodes-base.extractFromFile","typeVersion":1,"position":[672,16]},{"parameters":{"jsCode":"const text = ($json.text ?? '').trim();\n\nif (!text) {\n  throw new Error('The TXT file is empty.');\n}\n\nconst source = $('Google Drive Trigger').first().json;\nconst originalName = source.name ?? 'tts.txt';\n\n// Remove .txt extension\nconst baseName = originalName.replace(/\\.txt$/i, '');\n\n// Target chunk size\nconst TARGET_WORDS = 400;\n\n// Don't leave a very small final chunk.\n// If the final chunk is below this size, merge it with the previous chunk.\nconst MIN_FINAL_WORDS = 150;\n\n// Normalize line endings\nconst normalized = text.replace(/\\r\\n/g, '\\n').replace(/\\r/g, '\\n');\n\n// Split into paragraphs\nconst paragraphs = normalized\n  .split(/\\n\\s*\\n+/)\n  .map(p => p.trim())\n  .filter(Boolean);\n\n// Count words\nfunction wordCount(str) {\n  return str.split(/\\s+/).filter(Boolean).length;\n}\n\n// Split a long paragraph into sentences\nfunction splitLongParagraph(paragraph) {\n  const sentences = paragraph.match(/[^.!?]+[.!?]+(?:[\"'”’)]*)|[^.!?]+$/g);\n\n  if (!sentences) {\n    return [paragraph];\n  }\n\n  return sentences.map(s => s.trim()).filter(Boolean);\n}\n\n// First turn paragraphs into manageable units.\n// Normal paragraphs stay intact; very long paragraphs are split into sentences.\nconst units = [];\n\nfor (const paragraph of paragraphs) {\n  if (wordCount(paragraph) <= TARGET_WORDS) {\n    units.push(paragraph);\n  } else {\n    units.push(...splitLongParagraph(paragraph));\n  }\n}\n\n// Build chunks while preserving paragraph/sentence boundaries\nconst chunks = [];\nlet current = [];\nlet currentWords = 0;\n\nfor (const unit of units) {\n  const words = wordCount(unit);\n\n  // If adding this unit would make the chunk too large,\n  // start a new chunk — but don't create an empty chunk.\n  if (\n    current.length > 0 &&\n    currentWords + words > TARGET_WORDS\n  ) {\n    chunks.push(current.join('\\n\\n'));\n    current = [];\n    currentWords = 0;\n  }\n\n  current.push(unit);\n  currentWords += words;\n}\n\n// Add final chunk\nif (current.length > 0) {\n  chunks.push(current.join('\\n\\n'));\n}\n\n// Merge a very small final chunk into the previous chunk\nif (\n  chunks.length > 1 &&\n  wordCount(chunks[chunks.length - 1]) < MIN_FINAL_WORDS\n) {\n  const last = chunks.pop();\n\n  chunks[chunks.length - 1] =\n    chunks[chunks.length - 1] + '\\n\\n' + last;\n}\n\n// Return one n8n item per chunk\nreturn chunks.map((chunk, index) => ({\n  json: {\n    text: chunk,\n    baseName,\n    chunkNumber: index + 1,\n    wordCount: wordCount(chunk),\n    totalChunks: chunks.length,\n    sourceFileId: source.id\n  }\n}));"},"id":"489ddd75-3a32-4569-aae7-fa8c30bc1c2f","name":"Split Into Chunks","type":"n8n-nodes-base.code","typeVersion":2,"position":[896,16]},{"parameters":{"method":"POST","url":"https://generativelanguage.googleapis.com/v1beta/interactions","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Content-Type","value":"application/json"},{"name":"x-goog-api-key","value":"AQ.Ab8RN6LubdjF-SENdRX1YpRDRkM5u3zF__BPuTeFbohC61s1xA"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ JSON.stringify({\n  model: \"gemini-3.1-flash-tts-preview\",\n\n  input:\n    \"Read the following narration in a calm, warm, natural and contemplative voice. \" +\n    \"Speak clearly, with gentle pauses between ideas. \" +\n    \"Do not add, remove, summarize, or paraphrase any words. \" +\n    \"The following text is the exact narration to speak:\\n\\n\" +\n    $json.text,\n\n  response_format: {\n    type: \"audio\"\n  },\n\n  generation_config: {\n    speech_config: [\n      {\n        voice: \"Charon\"\n      }\n    ]\n  }\n}) }}","options":{"timeout":300000}},"id":"ba3bd84f-2ef9-414f-a234-b0da669efbba","name":"Gemini TTS","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1344,16]},{"parameters":{"name":"={{ $binary.data.fileName }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"1zGTlISwhWgJGKm_lKtPzW1hyO2ZQSMDa","mode":"id"},"options":{}},"id":"57ed1230-d0d7-4a11-99ad-330440373b2a","name":"Upload WAV to Drive","type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[1792,16],"credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"jsCode":"// Pass through the original source file ID and record that this chunk uploaded.\n// Archive should be handled only after ALL chunks have succeeded.\nconst meta = $('Split Into Chunks').item.json;\nreturn {json: {...meta, uploaded: true}};"},"id":"b3b41161-d753-4314-8b1e-0be1ade053d3","name":"Mark Chunk Uploaded","type":"n8n-nodes-base.code","typeVersion":2,"position":[2016,96]},{"parameters":{"jsCode":"// This node runs once after ALL WAV uploads have completed.\n// If any Gemini TTS or Google Drive upload failed, n8n stops before reaching here,\n// so the source TXT is not archived.\nconst sourceFileId = $('Google Drive Trigger').first().json.id;\nconst sourceName = $('Google Drive Trigger').first().json.name;\n\nreturn [{\n  json: {\n    sourceFileId,\n    sourceName,\n    status: 'all WAV chunks uploaded successfully'\n  }\n}];"},"id":"7eb67a7f-393f-4484-8944-02b28d62dd64","name":"Prepare Archive","type":"n8n-nodes-base.code","typeVersion":2,"position":[1344,-176]},{"parameters":{"operation":"move","fileId":"={{ $json.sourceFileId }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":"1v1ZS4E651TmD9yNNjZ9x2lLdpgkS9ucB"},"id":"c339c00d-c148-4209-99ca-9453610e350e","name":"Move TXT to Archive","type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[1568,-176],"credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"operation":"download","fileId":{"__rl":true,"value":"={{ $json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[448,16],"id":"ee155680-ad66-4b04-97a5-540d1c2f46a5","name":"Download file","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"options":{}},"type":"n8n-nodes-base.splitInBatches","typeVersion":3,"position":[1120,16],"id":"39a0e071-b523-4590-96d4-d3881209ba82","name":"Loop Over Items"},{"parameters":{"jsCode":"function findAudio(node) {\n  if (!node || typeof node !== 'object') {\n    return null;\n  }\n\n  // Current Interactions API audio content\n  if (\n    node.type === 'audio' &&\n    typeof node.data === 'string'\n  ) {\n    return node;\n  }\n\n  if (Array.isArray(node)) {\n    for (const item of node) {\n      const result = findAudio(item);\n      if (result) return result;\n    }\n  } else {\n    for (const value of Object.values(node)) {\n      const result = findAudio(value);\n      if (result) return result;\n    }\n  }\n\n  return null;\n}\n\nconst audio = findAudio($json);\n\nif (!audio) {\n  throw new Error(\n    'No audio content block was found in the Gemini response.'\n  );\n}\n\nconst chunk = $('Split Into Chunks').item.json;\n\n// Gemini TTS returns raw PCM audio.\n// Google documents this as:\n// 24 kHz, mono, 16-bit PCM.\nconst pcm = Buffer.from(audio.data, 'base64');\n\nconst sampleRate = audio.sample_rate || 24000;\nconst channels = audio.channels || 1;\nconst bitsPerSample = 16;\n\nconst byteRate =\n  sampleRate * channels * bitsPerSample / 8;\n\nconst blockAlign =\n  channels * bitsPerSample / 8;\n\nconst dataSize = pcm.length;\n\n// Standard 44-byte WAV header\nconst header = Buffer.alloc(44);\n\nheader.write('RIFF', 0);\nheader.writeUInt32LE(36 + dataSize, 4);\nheader.write('WAVE', 8);\n\nheader.write('fmt ', 12);\nheader.writeUInt32LE(16, 16);\nheader.writeUInt16LE(1, 20); // PCM\nheader.writeUInt16LE(channels, 22);\nheader.writeUInt32LE(sampleRate, 24);\nheader.writeUInt32LE(byteRate, 28);\nheader.writeUInt16LE(blockAlign, 32);\nheader.writeUInt16LE(bitsPerSample, 34);\n\nheader.write('data', 36);\nheader.writeUInt32LE(dataSize, 40);\n\nconst wav = Buffer.concat([header, pcm]);\n\nconst baseName =\n  chunk.baseName.replace(/\\.txt$/i, '');\n\nconst fileName =\n  `${baseName}_${String(chunk.chunkNumber).padStart(3, '0')}.wav`;\n\nreturn {\n  json: {\n    ...chunk,\n    fileName,\n    mimeType: 'audio/wav',\n    audioBytes: wav.length,\n    sampleRate,\n    channels\n  },\n\n  binary: {\n    data: {\n      data: wav.toString('base64'),\n      mimeType: 'audio/wav',\n      fileName,\n      fileExtension: 'wav'\n    }\n  }\n};"},"id":"262aa483-3f8e-4e55-af54-483733f634cf","name":"PCM -> WAV","type":"n8n-nodes-base.code","typeVersion":2,"position":[1568,16]}],"connections":{"Google Drive Trigger":{"main":[[{"node":"Only TXT Files","type":"main","index":0}]]},"Only TXT Files":{"main":[[{"node":"Download file","type":"main","index":0}]]},"Extract Text":{"main":[[{"node":"Split Into Chunks","type":"main","index":0}]]},"Split Into Chunks":{"main":[[{"node":"Loop Over Items","type":"main","index":0}]]},"Gemini TTS":{"main":[[{"node":"PCM -> WAV","type":"main","index":0}]]},"Upload WAV to Drive":{"main":[[{"node":"Mark Chunk Uploaded","type":"main","index":0}]]},"Mark Chunk Uploaded":{"main":[[{"node":"Loop Over Items","type":"main","index":0}]]},"Prepare Archive":{"main":[[{"node":"Move TXT to Archive","type":"main","index":0}]]},"Download file":{"main":[[{"node":"Extract Text","type":"main","index":0}]]},"Loop Over Items":{"main":[[{"node":"Prepare Archive","type":"main","index":0}],[{"node":"Gemini TTS","type":"main","index":0}]]},"PCM -> WAV":{"main":[[{"node":"Upload WAV to Drive","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate"},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"nodeGroups":[],"pinData":{},"versionId":"386fc948-4829-403b-bfbe-d59a1a3f7d2d","activeVersionId":null,"versionCounter":25,"triggerCount":0,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-09-16T04:52:04.381Z","createdAt":"2026-09-16T04:52:04.381Z","role":"workflow:owner","workflowId":"AyG9tI6j8mZxYAFw","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":null,"description":null}}
+{
+  "updatedAt": "2026-09-16T05:56:19.590Z",
+  "createdAt": "2026-09-16T04:52:04.363Z",
+  "id": "AyG9tI6j8mZxYAFw",
+  "name": "N8N Gemini TTS v1",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1DfGForEwVkGuBJr2Lsdv1VGrJRrrJ6lS",
+          "mode": "id"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "3f59da10-8b52-4c97-95de-8e3881efbf7e",
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        16
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.mimeType }}",
+              "rightValue": "text/plain",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a9dad5ef-9f6b-493b-b7d1-febd651031f4",
+      "name": "Only TXT Files",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "id": "781a0a26-7b95-43d9-91d8-6a580092305d",
+      "name": "Extract Text",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        672,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = ($json.text ?? '').trim();\n\nif (!text) {\n  throw new Error('The TXT file is empty.');\n}\n\nconst source = $('Google Drive Trigger').first().json;\nconst originalName = source.name ?? 'tts.txt';\n\n// Remove .txt extension\nconst baseName = originalName.replace(/\\.txt$/i, '');\n\n// Target chunk size\nconst TARGET_WORDS = 400;\n\n// Don't leave a very small final chunk.\n// If the final chunk is below this size, merge it with the previous chunk.\nconst MIN_FINAL_WORDS = 150;\n\n// Normalize line endings\nconst normalized = text.replace(/\\r\\n/g, '\\n').replace(/\\r/g, '\\n');\n\n// Split into paragraphs\nconst paragraphs = normalized\n  .split(/\\n\\s*\\n+/)\n  .map(p => p.trim())\n  .filter(Boolean);\n\n// Count words\nfunction wordCount(str) {\n  return str.split(/\\s+/).filter(Boolean).length;\n}\n\n// Split a long paragraph into sentences\nfunction splitLongParagraph(paragraph) {\n  const sentences = paragraph.match(/[^.!?]+[.!?]+(?:[\"'”’)]*)|[^.!?]+$/g);\n\n  if (!sentences) {\n    return [paragraph];\n  }\n\n  return sentences.map(s => s.trim()).filter(Boolean);\n}\n\n// First turn paragraphs into manageable units.\n// Normal paragraphs stay intact; very long paragraphs are split into sentences.\nconst units = [];\n\nfor (const paragraph of paragraphs) {\n  if (wordCount(paragraph) <= TARGET_WORDS) {\n    units.push(paragraph);\n  } else {\n    units.push(...splitLongParagraph(paragraph));\n  }\n}\n\n// Build chunks while preserving paragraph/sentence boundaries\nconst chunks = [];\nlet current = [];\nlet currentWords = 0;\n\nfor (const unit of units) {\n  const words = wordCount(unit);\n\n  // If adding this unit would make the chunk too large,\n  // start a new chunk — but don't create an empty chunk.\n  if (\n    current.length > 0 &&\n    currentWords + words > TARGET_WORDS\n  ) {\n    chunks.push(current.join('\\n\\n'));\n    current = [];\n    currentWords = 0;\n  }\n\n  current.push(unit);\n  currentWords += words;\n}\n\n// Add final chunk\nif (current.length > 0) {\n  chunks.push(current.join('\\n\\n'));\n}\n\n// Merge a very small final chunk into the previous chunk\nif (\n  chunks.length > 1 &&\n  wordCount(chunks[chunks.length - 1]) < MIN_FINAL_WORDS\n) {\n  const last = chunks.pop();\n\n  chunks[chunks.length - 1] =\n    chunks[chunks.length - 1] + '\\n\\n' + last;\n}\n\n// Return one n8n item per chunk\nreturn chunks.map((chunk, index) => ({\n  json: {\n    text: chunk,\n    baseName,\n    chunkNumber: index + 1,\n    wordCount: wordCount(chunk),\n    totalChunks: chunks.length,\n    sourceFileId: source.id\n  }\n}));"
+      },
+      "id": "489ddd75-3a32-4569-aae7-fa8c30bc1c2f",
+      "name": "Split Into Chunks",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/interactions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-goog-api-key",
+              "value": "AQ.Ab8RN6LubdjF-SENdRX1YpRDRkM5u3zF__BPuTeFbohC61s1xA"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  model: \"gemini-3.1-flash-tts-preview\",\n\n  input:\n    \"Read the following narration in a calm, warm, natural and contemplative voice. \" +\n    \"Speak clearly, with gentle pauses between ideas. \" +\n    \"Do not add, remove, summarize, or paraphrase any words. \" +\n    \"The following text is the exact narration to speak:\\n\\n\" +\n    $json.text,\n\n  response_format: {\n    type: \"audio\"\n  },\n\n  generation_config: {\n    speech_config: [\n      {\n        voice: \"Charon\"\n      }\n    ]\n  }\n}) }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "ba3bd84f-2ef9-414f-a234-b0da669efbba",
+      "name": "Gemini TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1344,
+        16
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $binary.data.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1zGTlISwhWgJGKm_lKtPzW1hyO2ZQSMDa",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "57ed1230-d0d7-4a11-99ad-330440373b2a",
+      "name": "Upload WAV to Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1792,
+        16
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pass through the original source file ID and record that this chunk uploaded.\n// Archive should be handled only after ALL chunks have succeeded.\nconst meta = $('Split Into Chunks').item.json;\nreturn {json: {...meta, uploaded: true}};"
+      },
+      "id": "b3b41161-d753-4314-8b1e-0be1ade053d3",
+      "name": "Mark Chunk Uploaded",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        96
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// This node runs once after ALL WAV uploads have completed.\n// If any Gemini TTS or Google Drive upload failed, n8n stops before reaching here,\n// so the source TXT is not archived.\nconst sourceFileId = $('Google Drive Trigger').first().json.id;\nconst sourceName = $('Google Drive Trigger').first().json.name;\n\nreturn [{\n  json: {\n    sourceFileId,\n    sourceName,\n    status: 'all WAV chunks uploaded successfully'\n  }\n}];"
+      },
+      "id": "7eb67a7f-393f-4484-8944-02b28d62dd64",
+      "name": "Prepare Archive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        -176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": "={{ $json.sourceFileId }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": "1v1ZS4E651TmD9yNNjZ9x2lLdpgkS9ucB"
+      },
+      "id": "c339c00d-c148-4209-99ca-9453610e350e",
+      "name": "Move TXT to Archive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1568,
+        -176
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        448,
+        16
+      ],
+      "id": "ee155680-ad66-4b04-97a5-540d1c2f46a5",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1120,
+        16
+      ],
+      "id": "39a0e071-b523-4590-96d4-d3881209ba82",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "function findAudio(node) {\n  if (!node || typeof node !== 'object') {\n    return null;\n  }\n\n  // Current Interactions API audio content\n  if (\n    node.type === 'audio' &&\n    typeof node.data === 'string'\n  ) {\n    return node;\n  }\n\n  if (Array.isArray(node)) {\n    for (const item of node) {\n      const result = findAudio(item);\n      if (result) return result;\n    }\n  } else {\n    for (const value of Object.values(node)) {\n      const result = findAudio(value);\n      if (result) return result;\n    }\n  }\n\n  return null;\n}\n\nconst audio = findAudio($json);\n\nif (!audio) {\n  throw new Error(\n    'No audio content block was found in the Gemini response.'\n  );\n}\n\nconst chunk = $('Split Into Chunks').item.json;\n\n// Gemini TTS returns raw PCM audio.\n// Google documents this as:\n// 24 kHz, mono, 16-bit PCM.\nconst pcm = Buffer.from(audio.data, 'base64');\n\nconst sampleRate = audio.sample_rate || 24000;\nconst channels = audio.channels || 1;\nconst bitsPerSample = 16;\n\nconst byteRate =\n  sampleRate * channels * bitsPerSample / 8;\n\nconst blockAlign =\n  channels * bitsPerSample / 8;\n\nconst dataSize = pcm.length;\n\n// Standard 44-byte WAV header\nconst header = Buffer.alloc(44);\n\nheader.write('RIFF', 0);\nheader.writeUInt32LE(36 + dataSize, 4);\nheader.write('WAVE', 8);\n\nheader.write('fmt ', 12);\nheader.writeUInt32LE(16, 16);\nheader.writeUInt16LE(1, 20); // PCM\nheader.writeUInt16LE(channels, 22);\nheader.writeUInt32LE(sampleRate, 24);\nheader.writeUInt32LE(byteRate, 28);\nheader.writeUInt16LE(blockAlign, 32);\nheader.writeUInt16LE(bitsPerSample, 34);\n\nheader.write('data', 36);\nheader.writeUInt32LE(dataSize, 40);\n\nconst wav = Buffer.concat([header, pcm]);\n\nconst baseName =\n  chunk.baseName.replace(/\\.txt$/i, '');\n\nconst fileName =\n  `${baseName}_${String(chunk.chunkNumber).padStart(3, '0')}.wav`;\n\nreturn {\n  json: {\n    ...chunk,\n    fileName,\n    mimeType: 'audio/wav',\n    audioBytes: wav.length,\n    sampleRate,\n    channels\n  },\n\n  binary: {\n    data: {\n      data: wav.toString('base64'),\n      mimeType: 'audio/wav',\n      fileName,\n      fileExtension: 'wav'\n    }\n  }\n};"
+      },
+      "id": "262aa483-3f8e-4e55-af54-483733f634cf",
+      "name": "PCM -> WAV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        16
+      ]
+    }
+  ],
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Only TXT Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only TXT Files": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Text": {
+      "main": [
+        [
+          {
+            "node": "Split Into Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Into Chunks": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini TTS": {
+      "main": [
+        [
+          {
+            "node": "PCM -> WAV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload WAV to Drive": {
+      "main": [
+        [
+          {
+            "node": "Mark Chunk Uploaded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Chunk Uploaded": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Archive": {
+      "main": [
+        [
+          {
+            "node": "Move TXT to Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Extract Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Prepare Archive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gemini TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PCM -> WAV": {
+      "main": [
+        [
+          {
+            "node": "Upload WAV to Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "386fc948-4829-403b-bfbe-d59a1a3f7d2d",
+  "activeVersionId": null,
+  "versionCounter": 25,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-09-16T04:52:04.381Z",
+      "createdAt": "2026-09-16T04:52:04.381Z",
+      "role": "workflow:owner",
+      "workflowId": "AyG9tI6j8mZxYAFw",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

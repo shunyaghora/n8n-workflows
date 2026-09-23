@@ -1,1 +1,116 @@
-{"updatedAt":"2026-09-12T21:46:04.187Z","createdAt":"2026-08-30T21:26:18.276Z","id":"XMhr4N50yCxbLH3h","name":"Google Home Message Broadcaster","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"method":"POST","url":"http://rudraghora:8123/api/services/tts/speak","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Authorization","value":"[REDACTED-AUTHORIZATION]"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={{ JSON.stringify({\n  entity_id: \"tts.google_translate_en_com\",\n  media_player_entity_id: \"media_player.\" + $json.media_device,\n  cache: true,\n  message: $json.message\n}) }}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[224,0],"id":"ccd0a845-4d58-46bb-b30f-b5925a1e37ab","name":"HTTP Request"},{"parameters":{"workflowInputs":{"values":[{"name":"media_device"},{"name":"message"}]}},"type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.2,"position":[0,0],"id":"b9280da9-4d32-4d52-8740-25d919b0930d","name":"When Executed by Another Workflow"}],"connections":{"When Executed by Another Workflow":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate","availableInMCP":true},"staticData":null,"meta":null,"nodeGroups":[],"pinData":{},"versionId":"67ab89b2-992d-491c-8a7c-64cd751ad91f","activeVersionId":"67ab89b2-992d-491c-8a7c-64cd751ad91f","versionCounter":65,"triggerCount":0,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-08-30T21:26:18.295Z","createdAt":"2026-08-30T21:26:18.295Z","role":"workflow:owner","workflowId":"XMhr4N50yCxbLH3h","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version 67ab89b2","description":""}}
+{
+  "updatedAt": "2026-09-12T21:46:04.187Z",
+  "createdAt": "2026-08-30T21:26:18.276Z",
+  "id": "XMhr4N50yCxbLH3h",
+  "name": "Google Home Message Broadcaster",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://rudraghora:8123/api/services/tts/speak",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[REDACTED-AUTHORIZATION]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  entity_id: \"tts.google_translate_en_com\",\n  media_player_entity_id: \"media_player.\" + $json.media_device,\n  cache: true,\n  message: $json.message\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "ccd0a845-4d58-46bb-b30f-b5925a1e37ab",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "media_device"
+            },
+            {
+              "name": "message"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b9280da9-4d32-4d52-8740-25d919b0930d",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "67ab89b2-992d-491c-8a7c-64cd751ad91f",
+  "activeVersionId": "67ab89b2-992d-491c-8a7c-64cd751ad91f",
+  "versionCounter": 65,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-08-30T21:26:18.295Z",
+      "createdAt": "2026-08-30T21:26:18.295Z",
+      "role": "workflow:owner",
+      "workflowId": "XMhr4N50yCxbLH3h",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 67ab89b2",
+    "description": ""
+  }
+}

@@ -1,1 +1,1031 @@
-{"updatedAt":"2026-08-30T18:49:34.081Z","createdAt":"2026-08-30T04:41:05.670Z","id":"VUZfGhhU5nS7KMVR","name":"Wyze Camera Motion Detection v2","description":null,"active":false,"isArchived":false,"nodes":[{"parameters":{"httpMethod":"POST","path":"wyze-motion","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[0,368],"id":"a07f4cae-6433-47d3-847b-4a8968df4aa7","name":"Webhook","webhookId":"fec821bc-a161-4b99-b2dc-363bc8cec7ed"},{"parameters":{"url":"={{ $json.headers['x-attach'] }}","options":{"response":{"response":{"responseFormat":"file"}}}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[224,368],"id":"71c1254b-50de-481a-864c-b03fb0c135e9","name":"HTTP Request"},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"a955f18f-53ec-40b9-a24b-5630369c3286","leftValue":"={{ $json.headers[\"x-camera\"] }}","rightValue":"=street-camera","operator":{"type":"string","operation":"equals"}},{"id":"090a67f5-3df3-4c80-a92f-02a83a5758d6","leftValue":"={{ $json.headers[\"x-camera\"] }}","rightValue":"doorbell","operator":{"type":"string","operation":"equals","name":"filter.operator.equals"}}],"combinator":"or"},"options":{}},"type":"n8n-nodes-base.filter","typeVersion":2.3,"position":[448,368],"id":"03ba373e-c4ab-486d-a980-58af926846e9","name":"Filter"},{"parameters":{"resource":"image","operation":"analyze","modelId":{"__rl":true,"value":"models/gemini-3.1-flash-lite","mode":"list","cachedResultName":"models/gemini-3.1-flash-lite"},"text":"Analyze this security camera image.\n\nDetermine whether there is a PERSON or any UNUSUAL ACTIVITY.\n\nReturn your response in exactly this format:\n\nALERT: YES\nDESCRIPTION: <brief description>\n\nor\n\nALERT: NO\nDESCRIPTION: <brief description>\n\nConsider these as ALERT:\n- A person is visible.\n- Someone appears to be approaching or entering the property.\n- A person is near a vehicle or door.\n- A person is behaving unusually.\n- A suspicious activity is visible.\n- Any other activity that would reasonably warrant a security notification.\n\nNormal empty street scenes, normal lighting changes, trees, shadows, and ordinary background activity should be ALERT: NO.\n\nReturn plain text only. Do not use Markdown.","inputType":"binary","options":{}},"type":"@n8n/n8n-nodes-langchain.googleGemini","typeVersion":1.2,"position":[896,0],"id":"f5070d09-d9d4-43c3-8c20-f415d86c9247","name":"Analyze an image","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}}},{"parameters":{"jsCode":"for (const item of $input.all()) {\n  if (item.binary?.data) {\n    item.binary.data.mimeType = 'image/jpeg';\n    item.binary.data.fileExtension = 'jpg';\n    item.binary.data.fileName = 'street-camera.jpg';\n  }\n}\n\nreturn $input.all();"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[672,80],"id":"790f34ae-3ecf-44b1-8e95-806a6b3fbd7e","name":"Code in JavaScript"},{"parameters":{"sendTo":"shunyaghora@gmail.com","subject":"={{ 'Motion Detected | ' + $('HTTP Request').item.json.headers['x-camera'] + ' | ' +  $now.toFormat('MMM d, yyyy h:mm:ss a') }}","message":"={{ $json.content.parts[0].text }}","options":{"appendAttribution":false,"attachmentsUi":{"attachmentsBinary":[{}]},"senderName":"N8N Motion Detector"}},"type":"n8n-nodes-base.gmail","typeVersion":2.2,"position":[1568,80],"id":"9d4fdb19-1c41-4526-a56d-2f35b3a9f86d","name":"Send a message","webhookId":"eb3459b5-7c7e-4c45-8d57-88952cba75b5","credentials":{"gmailOAuth2":{"id":"HeLEtLakvGfkOGXA","name":"Gmail account"}}},{"parameters":{"mode":"combine","combineBy":"combineByPosition","options":{}},"type":"n8n-nodes-base.merge","typeVersion":3.2,"position":[1120,80],"id":"6647a447-7e01-4d8c-b67e-05d48ad60ee1","name":"Merge"},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"a9292dfc-08dc-4fff-8d77-fcfcd7d201db","leftValue":"={{ $json.content.parts[0].text }}","rightValue":"ALERT: YES","operator":{"type":"string","operation":"contains"}}],"combinator":"and"},"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[1344,80],"id":"aae89a77-3eee-49fe-97ca-5ad976b6a1cc","name":"If"},{"parameters":{"jsCode":"const now = new Date();\n\nconst camera =\n  $json.headers?.['x-camera'] ||\n  $json.headers?.['X-Camera'] ||\n  'UnknownCamera';\n\nconst pad = n => String(n).padStart(2, '0');\n\nconst year = now.getFullYear();\nconst month = pad(now.getMonth() + 1);\nconst day = pad(now.getDate());\n\nconst timestamp =\n  `${year}-${month}-${day}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;\n\nconst extension =\n  $binary?.data?.fileExtension ||\n  'jpg';\n\nreturn [{\n  json: {\n    camera,\n    year: String(year),\n    month,\n    day,\n    fileName: `${camera}_${timestamp}.${extension}`,\n  },\n  binary: $binary,\n}];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[672,512],"id":"60c847b6-3a86-4113-8218-35d8beb429a9","name":"Code in JavaScript1"},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"200d171e-010e-4b0a-ac45-0d12d68c7d34","leftValue":"={{ $json.id }}","rightValue":"","operator":{"type":"string","operation":"notEmpty","singleValue":true}}],"combinator":"and"},"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[1120,512],"id":"9861e686-b388-44ee-ba9c-a96a6742b0c3","name":"If1"},{"parameters":{"resource":"folder","name":"={{ $('Code in JavaScript1').item.json.year }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC","mode":"list","cachedResultName":"Security Camera","cachedResultUrl":"https://drive.google.com/drive/folders/1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[1344,704],"id":"8f9b6dc9-4e5d-478a-8db7-363725a72935","name":"Create folder","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"resource":"fileFolder","queryString":"={{ $('Code in JavaScript1').first().json.month }}","filter":{"folderId":{"__rl":true,"value":"={{ $('Search files and folders').first().json.id }}","mode":"id"}},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[1344,320],"id":"10116d1b-44be-4297-b15f-a44eb6084c0f","name":"Search files and folders1","alwaysOutputData":true,"credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"resource":"fileFolder","queryString":"={{$json.year}}","filter":{"folderId":{"__rl":true,"value":"1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC","mode":"list","cachedResultName":"Security Camera","cachedResultUrl":"https://drive.google.com/drive/folders/1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC"}},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[896,512],"id":"ad10954d-8e2d-45e7-8a67-fc280e573645","name":"Search files and folders","alwaysOutputData":true,"credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"resource":"fileFolder","queryString":"={{ $('Code in JavaScript1').first().json.month }}","filter":{"folderId":{"__rl":true,"value":"={{ $('Create folder').first().json.id }}","mode":"id"}},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[1568,704],"id":"536a53ca-1a00-4305-8ab8-5d3ff97d75a8","name":"Search files and folders2","alwaysOutputData":true,"credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"jsCode":"const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[1792,224],"id":"df1d7c52-9d74-495f-94b4-71018e44d557","name":"Prepare Upload 1"},{"parameters":{"jsCode":"const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[2016,416],"id":"43632897-d8bd-4ef2-9d23-f70f938a77bd","name":"Prepare Upload 2"},{"parameters":{"name":"={{ $('Code in JavaScript1').item.json.fileName }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"={{ $json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[2240,416],"id":"315cc6dc-f409-41c8-954d-ee2a78c9400c","name":"Upload file1","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"name":"={{ $('Code in JavaScript1').item.json.fileName }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"={{ $json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[2016,224],"id":"9d0859a9-11d4-4e4b-969b-0b576a0b29df","name":"Upload file","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"resource":"folder","name":"={{ $('Code in JavaScript1').item.json.month }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"={{ $('Search files and folders').first().json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[1792,416],"id":"885a4e9e-652c-44ca-96b8-b3e50758f544","name":"Create folder1","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"d2e04e33-624c-4ebd-aa58-261879909752","leftValue":"={{ $json.id }}","rightValue":"","operator":{"type":"string","operation":"notEmpty","singleValue":true}}],"combinator":"and"},"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[1568,320],"id":"d0b184e8-961e-49a6-9b65-da7b0aebef5b","name":"If2"},{"parameters":{"jsCode":"const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[2016,608],"id":"af7b615e-e8fc-4067-8c82-6b4682e8b001","name":"Prepare Upload "},{"parameters":{"jsCode":"const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"},"type":"n8n-nodes-base.code","typeVersion":2,"position":[2240,800],"id":"b50c9f9a-a53c-4593-80ac-7746940baac6","name":"Prepare Upload 3"},{"parameters":{"name":"={{ $('Code in JavaScript1').item.json.fileName }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"={{ $json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[2464,800],"id":"ac2d0ce9-16d0-4f0a-8307-db2b9c1b7422","name":"Upload file2","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"name":"={{ $('Code in JavaScript1').item.json.fileName }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"={{ $json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[2240,608],"id":"9a631e6e-dd35-41f0-860e-2216ec242208","name":"Upload file3","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"resource":"folder","name":"={{ $('Code in JavaScript1').item.json.month }}","driveId":{"__rl":true,"mode":"list","value":"My Drive"},"folderId":{"__rl":true,"value":"={{ $('Create folder').item.json.id }}","mode":"id"},"options":{}},"type":"n8n-nodes-base.googleDrive","typeVersion":3,"position":[2016,800],"id":"fc75c1f6-a8f3-4d9b-96a5-eba6a6bc337d","name":"Create folder2","credentials":{"googleDriveOAuth2Api":{"id":"8ySSy9Cf7PYtR96e","name":"Google Drive account"}}},{"parameters":{"conditions":{"options":{"caseSensitive":true,"leftValue":"","typeValidation":"strict","version":3},"conditions":[{"id":"d2e04e33-624c-4ebd-aa58-261879909752","leftValue":"={{ $json.id }}","rightValue":"","operator":{"type":"string","operation":"notEmpty","singleValue":true}}],"combinator":"and"},"options":{}},"type":"n8n-nodes-base.if","typeVersion":2.3,"position":[1792,704],"id":"92fb1b12-9f80-4819-bbad-ffd8e3f455ab","name":"If3"}],"connections":{"Webhook":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]},"HTTP Request":{"main":[[{"node":"Filter","type":"main","index":0}]]},"Filter":{"main":[[{"node":"Code in JavaScript","type":"main","index":0},{"node":"Code in JavaScript1","type":"main","index":0}]]},"Code in JavaScript":{"main":[[{"node":"Analyze an image","type":"main","index":0},{"node":"Merge","type":"main","index":1}]]},"Analyze an image":{"main":[[{"node":"Merge","type":"main","index":0}]]},"Send a message":{"main":[[]]},"Merge":{"main":[[{"node":"If","type":"main","index":0}]]},"If":{"main":[[{"node":"Send a message","type":"main","index":0}]]},"Code in JavaScript1":{"main":[[{"node":"Search files and folders","type":"main","index":0}]]},"If1":{"main":[[{"node":"Search files and folders1","type":"main","index":0}],[{"node":"Create folder","type":"main","index":0}]]},"Create folder":{"main":[[{"node":"Search files and folders2","type":"main","index":0}]]},"Search files and folders1":{"main":[[{"node":"If2","type":"main","index":0}]]},"Search files and folders":{"main":[[{"node":"If1","type":"main","index":0}]]},"Prepare Upload 2":{"main":[[{"node":"Upload file1","type":"main","index":0}]]},"Prepare Upload 1":{"main":[[{"node":"Upload file","type":"main","index":0}]]},"Create folder1":{"main":[[{"node":"Prepare Upload 2","type":"main","index":0}]]},"If2":{"main":[[{"node":"Prepare Upload 1","type":"main","index":0}],[{"node":"Create folder1","type":"main","index":0}]]},"Prepare Upload ":{"main":[[{"node":"Upload file3","type":"main","index":0}]]},"Prepare Upload 3":{"main":[[{"node":"Upload file2","type":"main","index":0}]]},"Create folder2":{"main":[[{"node":"Prepare Upload 3","type":"main","index":0}]]},"If3":{"main":[[{"node":"Prepare Upload ","type":"main","index":0}],[{"node":"Create folder2","type":"main","index":0}]]},"Search files and folders2":{"main":[[{"node":"If3","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate","availableInMCP":false},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"nodeGroups":[],"pinData":{"Webhook":[{"json":{"headers":{"host":"rudraghora:5678","user-agent":"wyzebridge/2.10.3","accept-encoding":"gzip, deflate","accept":"*/*","connection":"keep-alive","x-title":"Motion Event","x-attach":"https://cpl-t-usw2.s3.us-west-2.amazonaws.com/D03F2787A720/2026-08-30/D03F2787A720011788107581_1788107582453_1_1_0/24a0b657530b4c03b606b70e58d14810_1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=[REDACTED-AWS-ACCESS-KEY]%2F20260830%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260830T163312Z&X-Amz-Expires=1200&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=1614c0f8b008151d003bb96c6fe457315d90d712e4eccd24349f64f9dfd400af","x-tags":"street-camera,motion","x-camera":"street-camera","x-event":"motion","content-length":"45"},"params":{},"query":{},"body":{},"webhookUrl":"http://rudraghora:5678/webhook/wyze-motion","executionMode":"production"},"binary":{"data":{"mimeType":"application/octet-stream","fileExtension":"bin","data":"filesystem-v2","fileName":"13fc379b-c63a-4654-94aa-5236ea208ad9","id":"filesystem-v2:workflows/VUZfGhhU5nS7KMVR/executions/882/binary_data/e31f57ca-0d0f-4a5b-88ec-82277442f229","fileSize":"45 B","bytes":45}},"pairedItem":{"item":0}}]},"versionId":"bb6cfa9d-6f1c-49aa-aeb2-807ee1aa6ec3","activeVersionId":null,"versionCounter":304,"triggerCount":1,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-08-30T04:41:05.695Z","createdAt":"2026-08-30T04:41:05.695Z","role":"workflow:owner","workflowId":"VUZfGhhU5nS7KMVR","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version bb6cfa9d","description":""}}
+{
+  "updatedAt": "2026-08-30T18:49:34.081Z",
+  "createdAt": "2026-08-30T04:41:05.670Z",
+  "id": "VUZfGhhU5nS7KMVR",
+  "name": "Wyze Camera Motion Detection v2",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wyze-motion",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        368
+      ],
+      "id": "a07f4cae-6433-47d3-847b-4a8968df4aa7",
+      "name": "Webhook",
+      "webhookId": "fec821bc-a161-4b99-b2dc-363bc8cec7ed"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.headers['x-attach'] }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        368
+      ],
+      "id": "71c1254b-50de-481a-864c-b03fb0c135e9",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a955f18f-53ec-40b9-a24b-5630369c3286",
+              "leftValue": "={{ $json.headers[\"x-camera\"] }}",
+              "rightValue": "=street-camera",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "090a67f5-3df3-4c80-a92f-02a83a5758d6",
+              "leftValue": "={{ $json.headers[\"x-camera\"] }}",
+              "rightValue": "doorbell",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        368
+      ],
+      "id": "03ba373e-c4ab-486d-a980-58af926846e9",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.1-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.1-flash-lite"
+        },
+        "text": "Analyze this security camera image.\n\nDetermine whether there is a PERSON or any UNUSUAL ACTIVITY.\n\nReturn your response in exactly this format:\n\nALERT: YES\nDESCRIPTION: <brief description>\n\nor\n\nALERT: NO\nDESCRIPTION: <brief description>\n\nConsider these as ALERT:\n- A person is visible.\n- Someone appears to be approaching or entering the property.\n- A person is near a vehicle or door.\n- A person is behaving unusually.\n- A suspicious activity is visible.\n- Any other activity that would reasonably warrant a security notification.\n\nNormal empty street scenes, normal lighting changes, trees, shadows, and ordinary background activity should be ALERT: NO.\n\nReturn plain text only. Do not use Markdown.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "f5070d09-d9d4-43c3-8c20-f415d86c9247",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  if (item.binary?.data) {\n    item.binary.data.mimeType = 'image/jpeg';\n    item.binary.data.fileExtension = 'jpg';\n    item.binary.data.fileName = 'street-camera.jpg';\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        80
+      ],
+      "id": "790f34ae-3ecf-44b1-8e95-806a6b3fbd7e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "shunyaghora@gmail.com",
+        "subject": "={{ 'Motion Detected | ' + $('HTTP Request').item.json.headers['x-camera'] + ' | ' +  $now.toFormat('MMM d, yyyy h:mm:ss a') }}",
+        "message": "={{ $json.content.parts[0].text }}",
+        "options": {
+          "appendAttribution": false,
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          },
+          "senderName": "N8N Motion Detector"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1568,
+        80
+      ],
+      "id": "9d4fdb19-1c41-4526-a56d-2f35b3a9f86d",
+      "name": "Send a message",
+      "webhookId": "eb3459b5-7c7e-4c45-8d57-88952cba75b5",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HeLEtLakvGfkOGXA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1120,
+        80
+      ],
+      "id": "6647a447-7e01-4d8c-b67e-05d48ad60ee1",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a9292dfc-08dc-4fff-8d77-fcfcd7d201db",
+              "leftValue": "={{ $json.content.parts[0].text }}",
+              "rightValue": "ALERT: YES",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1344,
+        80
+      ],
+      "id": "aae89a77-3eee-49fe-97ca-5ad976b6a1cc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\n\nconst camera =\n  $json.headers?.['x-camera'] ||\n  $json.headers?.['X-Camera'] ||\n  'UnknownCamera';\n\nconst pad = n => String(n).padStart(2, '0');\n\nconst year = now.getFullYear();\nconst month = pad(now.getMonth() + 1);\nconst day = pad(now.getDate());\n\nconst timestamp =\n  `${year}-${month}-${day}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;\n\nconst extension =\n  $binary?.data?.fileExtension ||\n  'jpg';\n\nreturn [{\n  json: {\n    camera,\n    year: String(year),\n    month,\n    day,\n    fileName: `${camera}_${timestamp}.${extension}`,\n  },\n  binary: $binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        672,
+        512
+      ],
+      "id": "60c847b6-3a86-4113-8218-35d8beb429a9",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "200d171e-010e-4b0a-ac45-0d12d68c7d34",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        512
+      ],
+      "id": "9861e686-b388-44ee-ba9c-a96a6742b0c3",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Code in JavaScript1').item.json.year }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC",
+          "mode": "list",
+          "cachedResultName": "Security Camera",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        704
+      ],
+      "id": "8f9b6dc9-4e5d-478a-8db7-363725a72935",
+      "name": "Create folder",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Code in JavaScript1').first().json.month }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('Search files and folders').first().json.id }}",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        320
+      ],
+      "id": "10116d1b-44be-4297-b15f-a44eb6084c0f",
+      "name": "Search files and folders1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{$json.year}}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC",
+            "mode": "list",
+            "cachedResultName": "Security Camera",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1BesEa5RCMM881qUvf6a4l5p0fw0iWYcC"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        896,
+        512
+      ],
+      "id": "ad10954d-8e2d-45e7-8a67-fc280e573645",
+      "name": "Search files and folders",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('Code in JavaScript1').first().json.month }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('Create folder').first().json.id }}",
+            "mode": "id"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1568,
+        704
+      ],
+      "id": "536a53ca-1a00-4305-8ab8-5d3ff97d75a8",
+      "name": "Search files and folders2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        224
+      ],
+      "id": "df1d7c52-9d74-495f-94b4-71018e44d557",
+      "name": "Prepare Upload 1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        416
+      ],
+      "id": "43632897-d8bd-4ef2-9d23-f70f938a77bd",
+      "name": "Prepare Upload 2"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Code in JavaScript1').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2240,
+        416
+      ],
+      "id": "315cc6dc-f409-41c8-954d-ee2a78c9400c",
+      "name": "Upload file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Code in JavaScript1').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2016,
+        224
+      ],
+      "id": "9d0859a9-11d4-4e4b-969b-0b576a0b29df",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Code in JavaScript1').item.json.month }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Search files and folders').first().json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1792,
+        416
+      ],
+      "id": "885a4e9e-652c-44ca-96b8-b3e50758f544",
+      "name": "Create folder1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d2e04e33-624c-4ebd-aa58-261879909752",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1568,
+        320
+      ],
+      "id": "d0b184e8-961e-49a6-9b65-da7b0aebef5b",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        608
+      ],
+      "id": "af7b615e-e8fc-4067-8c82-6b4682e8b001",
+      "name": "Prepare Upload "
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first();\n\n// Get the original image from your HTTP Request node\nconst original = $('HTTP Request').first();\n\nreturn [{\n  json: {\n    ...item.json,\n    fileName: $('Code in JavaScript1').first().json.fileName,\n    folderId: item.json.id,\n  },\n  binary: original.binary,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2240,
+        800
+      ],
+      "id": "b50c9f9a-a53c-4593-80ac-7746940baac6",
+      "name": "Prepare Upload 3"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Code in JavaScript1').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2464,
+        800
+      ],
+      "id": "ac2d0ce9-16d0-4f0a-8307-db2b9c1b7422",
+      "name": "Upload file2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Code in JavaScript1').item.json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2240,
+        608
+      ],
+      "id": "9a631e6e-dd35-41f0-860e-2216ec242208",
+      "name": "Upload file3",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('Code in JavaScript1').item.json.month }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('Create folder').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2016,
+        800
+      ],
+      "id": "fc75c1f6-a8f3-4d9b-96a5-eba6a6bc337d",
+      "name": "Create folder2",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "8ySSy9Cf7PYtR96e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d2e04e33-624c-4ebd-aa58-261879909752",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        704
+      ],
+      "id": "92fb1b12-9f80-4819-bbad-ffd8e3f455ab",
+      "name": "If3"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create folder": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders1": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload 2": {
+      "main": [
+        [
+          {
+            "node": "Upload file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload 1": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create folder1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create folder1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload ": {
+      "main": [
+        [
+          {
+            "node": "Upload file3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Upload 3": {
+      "main": [
+        [
+          {
+            "node": "Upload file2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create folder2": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Prepare Upload ",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create folder2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders2": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "headers": {
+            "host": "rudraghora:5678",
+            "user-agent": "wyzebridge/2.10.3",
+            "accept-encoding": "gzip, deflate",
+            "accept": "*/*",
+            "connection": "keep-alive",
+            "x-title": "Motion Event",
+            "x-attach": "https://cpl-t-usw2.s3.us-west-2.amazonaws.com/D03F2787A720/2026-08-30/D03F2787A720011788107581_1788107582453_1_1_0/24a0b657530b4c03b606b70e58d14810_1.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=[REDACTED-AWS-ACCESS-KEY]%2F20260830%2Fus-west-2%2Fs3%2Faws4_request&X-Amz-Date=20260830T163312Z&X-Amz-Expires=1200&X-Amz-SignedHeaders=host&x-id=GetObject&X-Amz-Signature=1614c0f8b008151d003bb96c6fe457315d90d712e4eccd24349f64f9dfd400af",
+            "x-tags": "street-camera,motion",
+            "x-camera": "street-camera",
+            "x-event": "motion",
+            "content-length": "45"
+          },
+          "params": {},
+          "query": {},
+          "body": {},
+          "webhookUrl": "http://rudraghora:5678/webhook/wyze-motion",
+          "executionMode": "production"
+        },
+        "binary": {
+          "data": {
+            "mimeType": "application/octet-stream",
+            "fileExtension": "bin",
+            "data": "filesystem-v2",
+            "fileName": "13fc379b-c63a-4654-94aa-5236ea208ad9",
+            "id": "filesystem-v2:workflows/VUZfGhhU5nS7KMVR/executions/882/binary_data/e31f57ca-0d0f-4a5b-88ec-82277442f229",
+            "fileSize": "45 B",
+            "bytes": 45
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "versionId": "bb6cfa9d-6f1c-49aa-aeb2-807ee1aa6ec3",
+  "activeVersionId": null,
+  "versionCounter": 304,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-08-30T04:41:05.695Z",
+      "createdAt": "2026-08-30T04:41:05.695Z",
+      "role": "workflow:owner",
+      "workflowId": "VUZfGhhU5nS7KMVR",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version bb6cfa9d",
+    "description": ""
+  }
+}

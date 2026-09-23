@@ -1,1 +1,113 @@
-{"updatedAt":"2026-09-12T21:46:04.187Z","createdAt":"2026-08-30T22:41:27.614Z","id":"T7poSH6OuC2R9KhQ","name":"Google Home Command Executor","description":null,"active":true,"isArchived":false,"nodes":[{"parameters":{"method":"POST","url":"http://rudraghora:8123/api/services/google_assistant_sdk/send_text_command","sendHeaders":true,"headerParameters":{"parameters":[{"name":"Authorization","value":"[REDACTED-AUTHORIZATION]"},{"name":"Content-Type","value":"application/json"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={\n  \"command\": \"{{ $json.command }}\"\n}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[224,0],"id":"7d5e7916-b338-44bf-9c8c-652793b0380a","name":"HTTP Request"},{"parameters":{"workflowInputs":{"values":[{"name":"command"}]}},"type":"n8n-nodes-base.executeWorkflowTrigger","typeVersion":1.2,"position":[0,0],"id":"a6e6ce35-ef35-4b4b-9bfe-2c2654d2e703","name":"When Executed by Another Workflow"}],"connections":{"When Executed by Another Workflow":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate","availableInMCP":true},"staticData":null,"meta":null,"nodeGroups":[],"pinData":{},"versionId":"3c03e7ac-301c-4cd7-81f9-94fb30e24468","activeVersionId":"3c03e7ac-301c-4cd7-81f9-94fb30e24468","versionCounter":19,"triggerCount":0,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-08-30T22:41:27.626Z","createdAt":"2026-08-30T22:41:27.626Z","role":"workflow:owner","workflowId":"T7poSH6OuC2R9KhQ","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version 3c03e7ac","description":""}}
+{
+  "updatedAt": "2026-09-12T21:46:04.187Z",
+  "createdAt": "2026-08-30T22:41:27.614Z",
+  "id": "T7poSH6OuC2R9KhQ",
+  "name": "Google Home Command Executor",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://rudraghora:8123/api/services/google_assistant_sdk/send_text_command",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "[REDACTED-AUTHORIZATION]"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"command\": \"{{ $json.command }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "7d5e7916-b338-44bf-9c8c-652793b0380a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "command"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a6e6ce35-ef35-4b4b-9bfe-2c2654d2e703",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "3c03e7ac-301c-4cd7-81f9-94fb30e24468",
+  "activeVersionId": "3c03e7ac-301c-4cd7-81f9-94fb30e24468",
+  "versionCounter": 19,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-08-30T22:41:27.626Z",
+      "createdAt": "2026-08-30T22:41:27.626Z",
+      "role": "workflow:owner",
+      "workflowId": "T7poSH6OuC2R9KhQ",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version 3c03e7ac",
+    "description": ""
+  }
+}

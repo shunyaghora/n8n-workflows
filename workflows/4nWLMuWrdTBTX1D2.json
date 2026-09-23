@@ -1,1 +1,549 @@
-{"updatedAt":"2026-08-20T23:37:57.079Z","createdAt":"2026-08-20T21:32:48.022Z","id":"4nWLMuWrdTBTX1D2","name":"Nagatilo Agent v4","description":null,"active":false,"isArchived":false,"nodes":[{"parameters":{"modelName":"models/gemini-3.5-flash-lite","options":{}},"type":"@n8n/n8n-nodes-langchain.lmChatGoogleGemini","typeVersion":1.1,"position":[-88,216],"id":"2cabc912-255a-4d71-9f58-5782adb32f31","name":"Google Gemini Chat Model","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}}},{"parameters":{"promptType":"define","text":"={{ $json.body.message }}","options":{"systemMessage":"=# ROLE\n\nYou are a friendly AI assistant. Your name is Nagatilo.\n\nYou have been given access to MCP Clients and MCP Servers.\n\n# RULES\n\nWhen the user sends a new message, decide if the user has shared any **noteworthy information** that should be saved in the \"Longterm Memory\" for future reference.\n\nIf so, use the **Longterm Memory** tool to store this information. DO NOT inform the user that you are saving this information. \n\nDO NOT save tool calls to \"Chat Memory\".\n\nSimply continue the conversation as normal.\n\nIf the user asks to send an email, use the \"Send Gmail Message\" tool to do so.\n\n# Tools\n\n## Longterm Memory\n\nUse this tool to **store any important facts** shared by the user. Summarize the information clearly and pass it to this tool.\n\n## Retrieve Facts\n\nUse this tool to retrieve the last stored **facts** collected from the user (including date/time).\n\n# MCP Clients\n## Supabase MCP Client\nCall this tool to get information on the philosophy, teachings and wisdom of Tilopa, Nagarjuna, Saraha and Osho.\n\n## Gmail MCP Client\nUse this tool to send an email to user. The user's email address is stored in Longterm Memory. If the email address is not found, ask the user to provide it.\n\n!! IMPORTANT !!\n\nTake these stored facts and knowledge into account when replying to any question or when the user seeks advice or if the user is looking to resolve any dilemma.\n\nRespond naturally and conversationally.\n\n{{ $today }}"}},"type":"@n8n/n8n-nodes-langchain.agent","typeVersion":3.1,"position":[160,-16],"id":"bb758889-716d-4079-91ce-65a0ff8ff83a","name":"AI Agent"},{"parameters":{"httpMethod":"POST","path":"fc0cd509-36d0-47c6-a9d9-759ab77e8bd5","responseMode":"lastNode","options":{}},"type":"n8n-nodes-base.webhook","typeVersion":2.1,"position":[-320,96],"id":"d5156858-c8dc-4137-b548-68879cada559","name":"Webhook","webhookId":"fc0cd509-36d0-47c6-a9d9-759ab77e8bd5"},{"parameters":{"sessionIdType":"customKey","sessionKey":"={{ $json.headers.userid }}","contextWindowLength":2},"type":"@n8n/n8n-nodes-langchain.memoryPostgresChat","typeVersion":1.4,"position":[40,216],"id":"5c1a17c6-26dc-4f29-b68b-e17bdbaf8aad","name":"Chat Memory","credentials":{"postgres":{"id":"vXdyJQPbco9rGiEC","name":"Postgres account"}}},{"parameters":{"modelName":"models/gemini-embedding-2"},"type":"@n8n/n8n-nodes-langchain.embeddingsGoogleGemini","typeVersion":1,"position":[-232,1496],"id":"e0c8c339-bac2-41ca-9e3e-003abeb612cc","name":"Embeddings Google Gemini","credentials":{"googlePalmApi":{"id":"BfJ07B3Y4UN0nfX2","name":"Google Gemini(PaLM) Api account"}}},{"parameters":{"public":true,"initialMessages":"Hi there! 👋\nMy name is Nagatilo. How can I assist you today?","options":{}},"type":"@n8n/n8n-nodes-langchain.chatTrigger","typeVersion":1.4,"position":[-320,-240],"id":"17fbc710-ca51-4324-b77e-fa92a2a8fecd","name":"When chat message received","webhookId":"101d603b-194a-40db-9a28-e7f10e8fb04d"},{"parameters":{"method":"POST","url":"http://rudraghora:5678/webhook/fc0cd509-36d0-47c6-a9d9-759ab77e8bd5","sendHeaders":true,"headerParameters":{"parameters":[{"name":"userid","value":"sanjay"}]},"sendBody":true,"specifyBody":"json","jsonBody":"={\n\"message\": \"{{ $json.chatInput }}\",\n\"voice\": false\n}","options":{}},"type":"n8n-nodes-base.httpRequest","typeVersion":4.5,"position":[-96,-240],"id":"462b40c7-d801-4fe7-9571-880598058d69","name":"HTTP Request"},{"parameters":{"operation":"select","schema":{"__rl":true,"mode":"list","value":"public"},"table":{"__rl":true,"value":"longterm_memory","mode":"list","cachedResultName":"longterm_memory"},"returnAll":true,"where":{"values":[{"column":"userid","value":"={{ $json.headers.userid }}"}]},"options":{"outputColumns":["created_at","fact"]}},"type":"n8n-nodes-base.postgresTool","typeVersion":2.7,"position":[168,216],"id":"830f790d-fd59-4cf6-a5aa-8cfd0022edaf","name":"Retrieve Facts","credentials":{"postgres":{"id":"vXdyJQPbco9rGiEC","name":"Postgres account"}}},{"parameters":{"mode":"retrieve-as-tool","toolDescription":"Call this tool to get information on the philosophy, teachings and wisdom of Tilopa, Nagarjuna, Saraha and Osho.","tableName":{"__rl":true,"value":"documents","mode":"list","cachedResultName":"documents"},"options":{}},"type":"@n8n/n8n-nodes-langchain.vectorStoreSupabase","typeVersion":1.3,"position":[-312,1288],"id":"a1d8a807-4754-40e2-ac4e-e02d67e879ee","name":"Knowledge Store","credentials":{"supabaseApi":{"id":"tWTqrf6QJy4O38Dd","name":"Supabase account"}}},{"parameters":{"schema":{"__rl":true,"mode":"list","value":"public"},"table":{"__rl":true,"value":"=longterm_memory","mode":"name"},"columns":{"mappingMode":"defineBelow","value":{"userid":"={{ $json.headers.userid }}","fact":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fact', ``, 'string') }}"},"matchingColumns":["id"],"schema":[{"id":"id","displayName":"id","required":false,"defaultMatch":true,"display":true,"type":"number","canBeUsedToMatch":true,"removed":true},{"id":"created_at","displayName":"created_at","required":false,"defaultMatch":false,"display":true,"type":"dateTime","canBeUsedToMatch":true},{"id":"userid","displayName":"userid","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},{"id":"fact","displayName":"fact","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true}],"attemptToConvertTypes":false,"convertFieldsToString":false},"options":{}},"type":"n8n-nodes-base.postgresTool","typeVersion":2.7,"position":[296,216],"id":"b10adb5c-1f4f-4b52-aac6-048735c642a8","name":"Longterm Memory","credentials":{"postgres":{"id":"vXdyJQPbco9rGiEC","name":"Postgres account"}}},{"parameters":{"descriptionType":"manual","toolDescription":"Use this tool to send an email message to the user.","sendTo":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}","subject":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}","emailType":"text","message":"={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}","options":{"appendAttribution":false,"senderName":"Nagatilo AI Assistant"}},"type":"n8n-nodes-base.gmailTool","typeVersion":2.2,"position":[-248,648],"id":"0b61ce5d-e0b2-4b53-8173-bbd665e99273","name":"Send Gmail Message","webhookId":"09259027-6150-4c5e-90a0-871645e8774e","credentials":{"gmailOAuth2":{"id":"HeLEtLakvGfkOGXA","name":"Gmail account"}}},{"parameters":{"path":"9b6e03e7-b6d7-4a3b-8dc0-9a95393eeaee"},"type":"@n8n/n8n-nodes-langchain.mcpTrigger","typeVersion":2,"position":[-320,416],"id":"12cda4ed-ad20-4d2b-9563-e75914d68e23","name":"Gmail MCP Server Trigger","webhookId":"9b6e03e7-b6d7-4a3b-8dc0-9a95393eeaee"},{"parameters":{"endpointUrl":"http://rudraghora:5678/mcp/9b6e03e7-b6d7-4a3b-8dc0-9a95393eeaee","options":{}},"type":"@n8n/n8n-nodes-langchain.mcpClientTool","typeVersion":1.4,"position":[424,216],"id":"9059089d-015a-4b5b-b95a-b51e7c302731","name":"Gmail MCP Client"},{"parameters":{"endpointUrl":"http://rudraghora:5678/mcp/b9617f50-74f2-47f6-8854-95f7eb05cca3","options":{}},"type":"@n8n/n8n-nodes-langchain.mcpClientTool","typeVersion":1.4,"position":[552,216],"id":"20b241bf-93a3-4c88-ba32-b8f50f072a68","name":"Subabase MCP Client"},{"parameters":{"path":"b9617f50-74f2-47f6-8854-95f7eb05cca3"},"type":"@n8n/n8n-nodes-langchain.mcpTrigger","typeVersion":2,"position":[-304,1056],"id":"d8360ff5-692d-4efd-9367-7c3cba2da591","name":"Supabase MCP Server Trigger","webhookId":"b9617f50-74f2-47f6-8854-95f7eb05cca3"}],"connections":{"Google Gemini Chat Model":{"ai_languageModel":[[{"node":"AI Agent","type":"ai_languageModel","index":0}]]},"Webhook":{"main":[[{"node":"AI Agent","type":"main","index":0}]]},"Chat Memory":{"ai_memory":[[{"node":"AI Agent","type":"ai_memory","index":0}]]},"Embeddings Google Gemini":{"ai_embedding":[[{"node":"Knowledge Store","type":"ai_embedding","index":0}]]},"When chat message received":{"main":[[{"node":"HTTP Request","type":"main","index":0}]]},"Retrieve Facts":{"ai_tool":[[{"node":"AI Agent","type":"ai_tool","index":0}]]},"Knowledge Store":{"ai_tool":[[{"node":"Supabase MCP Server Trigger","type":"ai_tool","index":0}]]},"Longterm Memory":{"ai_tool":[[{"node":"AI Agent","type":"ai_tool","index":0}]]},"Send Gmail Message":{"ai_tool":[[{"node":"Gmail MCP Server Trigger","type":"ai_tool","index":0}]]},"Gmail MCP Client":{"ai_tool":[[{"node":"AI Agent","type":"ai_tool","index":0}]]},"Subabase MCP Client":{"ai_tool":[[{"node":"AI Agent","type":"ai_tool","index":0}]]}},"settings":{"executionOrder":"v1","binaryMode":"separate","availableInMCP":false},"staticData":null,"meta":{"templateCredsSetupCompleted":true},"nodeGroups":[],"pinData":{},"versionId":"a3cd15b0-b155-41e2-98ae-b06ca925143e","activeVersionId":null,"versionCounter":162,"triggerCount":4,"sourceWorkflowId":null,"tags":[],"shared":[{"updatedAt":"2026-08-20T21:32:48.033Z","createdAt":"2026-08-20T21:32:48.033Z","role":"workflow:owner","workflowId":"4nWLMuWrdTBTX1D2","projectId":"aGRFtPaRiKGjpsdP","project":{"updatedAt":"2026-08-13T04:35:33.556Z","createdAt":"2026-08-13T04:23:43.436Z","id":"aGRFtPaRiKGjpsdP","name":"Sanjay A <taoharmony@gmail.com>","type":"personal","icon":null,"description":null,"customTelemetryTags":[],"creatorId":"69245663-908c-4611-afca-849c0072a757"}}],"versionMetadata":{"name":"Version a3cd15b0","description":""}}
+{
+  "updatedAt": "2026-08-20T23:37:57.079Z",
+  "createdAt": "2026-08-20T21:32:48.022Z",
+  "id": "4nWLMuWrdTBTX1D2",
+  "name": "Nagatilo Agent v4",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -88,
+        216
+      ],
+      "id": "2cabc912-255a-4d71-9f58-5782adb32f31",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "=# ROLE\n\nYou are a friendly AI assistant. Your name is Nagatilo.\n\nYou have been given access to MCP Clients and MCP Servers.\n\n# RULES\n\nWhen the user sends a new message, decide if the user has shared any **noteworthy information** that should be saved in the \"Longterm Memory\" for future reference.\n\nIf so, use the **Longterm Memory** tool to store this information. DO NOT inform the user that you are saving this information. \n\nDO NOT save tool calls to \"Chat Memory\".\n\nSimply continue the conversation as normal.\n\nIf the user asks to send an email, use the \"Send Gmail Message\" tool to do so.\n\n# Tools\n\n## Longterm Memory\n\nUse this tool to **store any important facts** shared by the user. Summarize the information clearly and pass it to this tool.\n\n## Retrieve Facts\n\nUse this tool to retrieve the last stored **facts** collected from the user (including date/time).\n\n# MCP Clients\n## Supabase MCP Client\nCall this tool to get information on the philosophy, teachings and wisdom of Tilopa, Nagarjuna, Saraha and Osho.\n\n## Gmail MCP Client\nUse this tool to send an email to user. The user's email address is stored in Longterm Memory. If the email address is not found, ask the user to provide it.\n\n!! IMPORTANT !!\n\nTake these stored facts and knowledge into account when replying to any question or when the user seeks advice or if the user is looking to resolve any dilemma.\n\nRespond naturally and conversationally.\n\n{{ $today }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "bb758889-716d-4079-91ce-65a0ff8ff83a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fc0cd509-36d0-47c6-a9d9-759ab77e8bd5",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -320,
+        96
+      ],
+      "id": "d5156858-c8dc-4137-b548-68879cada559",
+      "name": "Webhook",
+      "webhookId": "fc0cd509-36d0-47c6-a9d9-759ab77e8bd5"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.headers.userid }}",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.4,
+      "position": [
+        40,
+        216
+      ],
+      "id": "5c1a17c6-26dc-4f29-b68b-e17bdbaf8aad",
+      "name": "Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "vXdyJQPbco9rGiEC",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-2"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -232,
+        1496
+      ],
+      "id": "e0c8c339-bac2-41ca-9e3e-003abeb612cc",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "BfJ07B3Y4UN0nfX2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nMy name is Nagatilo. How can I assist you today?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -320,
+        -240
+      ],
+      "id": "17fbc710-ca51-4324-b77e-fa92a2a8fecd",
+      "name": "When chat message received",
+      "webhookId": "101d603b-194a-40db-9a28-e7f10e8fb04d"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://rudraghora:5678/webhook/fc0cd509-36d0-47c6-a9d9-759ab77e8bd5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "userid",
+              "value": "sanjay"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n\"message\": \"{{ $json.chatInput }}\",\n\"voice\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -96,
+        -240
+      ],
+      "id": "462b40c7-d801-4fe7-9571-880598058d69",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "longterm_memory",
+          "mode": "list",
+          "cachedResultName": "longterm_memory"
+        },
+        "returnAll": true,
+        "where": {
+          "values": [
+            {
+              "column": "userid",
+              "value": "={{ $json.headers.userid }}"
+            }
+          ]
+        },
+        "options": {
+          "outputColumns": [
+            "created_at",
+            "fact"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.7,
+      "position": [
+        168,
+        216
+      ],
+      "id": "830f790d-fd59-4cf6-a5aa-8cfd0022edaf",
+      "name": "Retrieve Facts",
+      "credentials": {
+        "postgres": {
+          "id": "vXdyJQPbco9rGiEC",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Call this tool to get information on the philosophy, teachings and wisdom of Tilopa, Nagarjuna, Saraha and Osho.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -312,
+        1288
+      ],
+      "id": "a1d8a807-4754-40e2-ac4e-e02d67e879ee",
+      "name": "Knowledge Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "tWTqrf6QJy4O38Dd",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "=longterm_memory",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "userid": "={{ $json.headers.userid }}",
+            "fact": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fact', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "userid",
+              "displayName": "userid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fact",
+              "displayName": "fact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgresTool",
+      "typeVersion": 2.7,
+      "position": [
+        296,
+        216
+      ],
+      "id": "b10adb5c-1f4f-4b52-aac6-048735c642a8",
+      "name": "Longterm Memory",
+      "credentials": {
+        "postgres": {
+          "id": "vXdyJQPbco9rGiEC",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Use this tool to send an email message to the user.",
+        "sendTo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('To', ``, 'string') }}",
+        "subject": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Subject', ``, 'string') }}",
+        "emailType": "text",
+        "message": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Message', ``, 'string') }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "Nagatilo AI Assistant"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTool",
+      "typeVersion": 2.2,
+      "position": [
+        -248,
+        648
+      ],
+      "id": "0b61ce5d-e0b2-4b53-8173-bbd665e99273",
+      "name": "Send Gmail Message",
+      "webhookId": "09259027-6150-4c5e-90a0-871645e8774e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HeLEtLakvGfkOGXA",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "9b6e03e7-b6d7-4a3b-8dc0-9a95393eeaee"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        -320,
+        416
+      ],
+      "id": "12cda4ed-ad20-4d2b-9563-e75914d68e23",
+      "name": "Gmail MCP Server Trigger",
+      "webhookId": "9b6e03e7-b6d7-4a3b-8dc0-9a95393eeaee"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://rudraghora:5678/mcp/9b6e03e7-b6d7-4a3b-8dc0-9a95393eeaee",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.4,
+      "position": [
+        424,
+        216
+      ],
+      "id": "9059089d-015a-4b5b-b95a-b51e7c302731",
+      "name": "Gmail MCP Client"
+    },
+    {
+      "parameters": {
+        "endpointUrl": "http://rudraghora:5678/mcp/b9617f50-74f2-47f6-8854-95f7eb05cca3",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+      "typeVersion": 1.4,
+      "position": [
+        552,
+        216
+      ],
+      "id": "20b241bf-93a3-4c88-ba32-b8f50f072a68",
+      "name": "Subabase MCP Client"
+    },
+    {
+      "parameters": {
+        "path": "b9617f50-74f2-47f6-8854-95f7eb05cca3"
+      },
+      "type": "@n8n/n8n-nodes-langchain.mcpTrigger",
+      "typeVersion": 2,
+      "position": [
+        -304,
+        1056
+      ],
+      "id": "d8360ff5-692d-4efd-9367-7c3cba2da591",
+      "name": "Supabase MCP Server Trigger",
+      "webhookId": "b9617f50-74f2-47f6-8854-95f7eb05cca3"
+    }
+  ],
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Knowledge Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Facts": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Knowledge Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Supabase MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Longterm Memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Gmail Message": {
+      "ai_tool": [
+        [
+          {
+            "node": "Gmail MCP Server Trigger",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Subabase MCP Client": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "a3cd15b0-b155-41e2-98ae-b06ca925143e",
+  "activeVersionId": null,
+  "versionCounter": 162,
+  "triggerCount": 4,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-08-20T21:32:48.033Z",
+      "createdAt": "2026-08-20T21:32:48.033Z",
+      "role": "workflow:owner",
+      "workflowId": "4nWLMuWrdTBTX1D2",
+      "projectId": "aGRFtPaRiKGjpsdP",
+      "project": {
+        "updatedAt": "2026-08-13T04:35:33.556Z",
+        "createdAt": "2026-08-13T04:23:43.436Z",
+        "id": "aGRFtPaRiKGjpsdP",
+        "name": "Sanjay A <taoharmony@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "69245663-908c-4611-afca-849c0072a757"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": "Version a3cd15b0",
+    "description": ""
+  }
+}
