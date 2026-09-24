@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-08-19T22:38:30.611Z",
+  "updatedAt": "2026-09-24T02:53:23.562Z",
   "createdAt": "2026-08-19T18:30:57.617Z",
   "id": "LzFoO31PZ87wfdkl",
   "name": "Nagatilo RAG Single Document",
@@ -25,10 +25,10 @@
         "filter": {
           "folderId": {
             "__rl": true,
-            "value": "12YwCcWG7LDf-98gXdj3Myak8QxCQ6Z1N",
+            "value": "1xc9o40zSdQFegcZK8JaXP5J6nC-8Mh8M",
             "mode": "list",
-            "cachedResultName": "Temp",
-            "cachedResultUrl": "https://drive.google.com/drive/folders/12YwCcWG7LDf-98gXdj3Myak8QxCQ6Z1N"
+            "cachedResultName": "N8N Nagatilo RAG Input",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1xc9o40zSdQFegcZK8JaXP5J6nC-8Mh8M"
           }
         },
         "options": {}
@@ -294,9 +294,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "f0e8a405-6588-4ee2-a6ae-81542295d808",
+  "versionId": "24f3ec33-666d-429a-9bc6-5401e9d50279",
   "activeVersionId": null,
-  "versionCounter": 88,
+  "versionCounter": 89,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],

@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-09-23T23:03:14.009Z",
-  "createdAt": "2026-08-31T03:48:02.503Z",
-  "id": "Rrw9LJkaxlhRwjZd",
-  "name": "Google Home Command Client",
+  "updatedAt": "2026-09-23T22:51:52.927Z",
+  "createdAt": "2026-09-23T22:51:00.741Z",
+  "id": "emZ3Lx8EssAGQffj",
+  "name": "Google Home Message Broadcaster Client",
   "description": null,
   "active": false,
   "isArchived": false,
@@ -15,30 +15,41 @@
         0,
         0
       ],
-      "id": "e6b0ba7c-1b1a-45d7-92a4-4cac69aafe9b",
+      "id": "bec57bc0-bafc-4f5c-bd95-a4918334427d",
       "name": "When clicking ‘Execute workflow’"
     },
     {
       "parameters": {
         "workflowId": {
           "__rl": true,
-          "value": "T7poSH6OuC2R9KhQ",
+          "value": "XMhr4N50yCxbLH3h",
           "mode": "list",
-          "cachedResultUrl": "/workflow/T7poSH6OuC2R9KhQ",
-          "cachedResultName": "Google Home Command Executor"
+          "cachedResultUrl": "/workflow/XMhr4N50yCxbLH3h",
+          "cachedResultName": "Google Home Message Broadcaster"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "command": "Turn Off the Dublin Master Bedroom Torch"
+            "media_device": "Dublin Master Bedroom Assistant",
+            "message": "Hello"
           },
           "matchingColumns": [
             "command"
           ],
           "schema": [
             {
-              "id": "command",
-              "displayName": "command",
+              "id": "media_device",
+              "displayName": "media_device",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -58,8 +69,8 @@
         224,
         0
       ],
-      "id": "5abd8aee-1780-478d-be1a-12a6f3282eef",
-      "name": "Call 'Google Home Command Executor'",
+      "id": "a546e015-a93a-4a02-8670-b944dfa58801",
+      "name": "Call 'Google Home Message Broadcaster'",
       "alwaysOutputData": false
     }
   ],
@@ -68,7 +79,7 @@
       "main": [
         [
           {
-            "node": "Call 'Google Home Command Executor'",
+            "node": "Call 'Google Home Message Broadcaster'",
             "type": "main",
             "index": 0
           }
@@ -85,18 +96,18 @@
   "meta": null,
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "9c75282c-d0f7-4f85-9343-a8e6e8f346e4",
+  "versionId": "4922c77e-631a-4249-9158-0016333030ee",
   "activeVersionId": null,
-  "versionCounter": 73,
+  "versionCounter": 9,
   "triggerCount": 0,
   "sourceWorkflowId": null,
   "tags": [],
   "shared": [
     {
-      "updatedAt": "2026-08-31T03:48:02.518Z",
-      "createdAt": "2026-08-31T03:48:02.518Z",
+      "updatedAt": "2026-09-23T22:51:00.762Z",
+      "createdAt": "2026-09-23T22:51:00.762Z",
       "role": "workflow:owner",
-      "workflowId": "Rrw9LJkaxlhRwjZd",
+      "workflowId": "emZ3Lx8EssAGQffj",
       "projectId": "aGRFtPaRiKGjpsdP",
       "project": {
         "updatedAt": "2026-08-13T04:35:33.556Z",

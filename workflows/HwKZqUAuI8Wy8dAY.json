@@ -4,7 +4,7 @@
   "id": "HwKZqUAuI8Wy8dAY",
   "name": "Read Email On Google Home",
   "description": null,
-  "active": true,
+  "active": false,
   "isArchived": false,
   "nodes": [
     {
@@ -215,7 +215,7 @@
   "nodeGroups": [],
   "pinData": {},
   "versionId": "25397a67-fa3a-44e3-b0dd-2b68c0c9581b",
-  "activeVersionId": "25397a67-fa3a-44e3-b0dd-2b68c0c9581b",
+  "activeVersionId": null,
   "versionCounter": 113,
   "triggerCount": 1,
   "sourceWorkflowId": null,
