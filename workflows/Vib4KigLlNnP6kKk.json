@@ -4,7 +4,7 @@
   "id": "Vib4KigLlNnP6kKk",
   "name": "N8N JEV Customer Support Assistant",
   "description": null,
-  "active": true,
+  "active": false,
   "isArchived": false,
   "nodes": [
     {
@@ -102,7 +102,7 @@
   "nodeGroups": [],
   "pinData": {},
   "versionId": "b3e14d54-1064-4bbc-b7a8-8e8ee919b420",
-  "activeVersionId": "b3e14d54-1064-4bbc-b7a8-8e8ee919b420",
+  "activeVersionId": null,
   "versionCounter": 43,
   "triggerCount": 1,
   "sourceWorkflowId": null,

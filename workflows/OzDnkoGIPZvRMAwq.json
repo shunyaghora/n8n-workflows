@@ -4,7 +4,7 @@
   "id": "OzDnkoGIPZvRMAwq",
   "name": "Email - HA Google TV",
   "description": null,
-  "active": false,
+  "active": true,
   "isArchived": false,
   "nodes": [
     {
@@ -119,7 +119,10 @@
   "staticData": {
     "node:Gmail Trigger": {
       "Gmail Trigger": {
-        "lastTimeChecked": 1786765700
+        "lastTimeChecked": 1790280623,
+        "possibleDuplicates": [
+          "1a0d50aa37cda618"
+        ]
       }
     }
   },
@@ -129,7 +132,7 @@
   "nodeGroups": [],
   "pinData": {},
   "versionId": "3b431ed5-2fd3-46aa-b26f-0c5f9e70ded1",
-  "activeVersionId": null,
+  "activeVersionId": "3b431ed5-2fd3-46aa-b26f-0c5f9e70ded1",
   "versionCounter": 62,
   "triggerCount": 1,
   "sourceWorkflowId": null,
@@ -155,7 +158,7 @@
     }
   ],
   "versionMetadata": {
-    "name": null,
-    "description": null
+    "name": "Version 3b431ed5",
+    "description": ""
   }
 }

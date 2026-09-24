@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-18T22:28:54.004Z",
+  "updatedAt": "2026-09-24T17:21:31.655Z",
   "createdAt": "2026-08-20T23:56:38.009Z",
   "id": "BvAzsQxf7NWMO3F1",
   "name": "Nagatilo Agent v5",
@@ -341,7 +341,7 @@
     },
     {
       "parameters": {
-        "endpointUrl": "http://rudraghora:5678/mcp/a16b8fcc-17e7-4628-8a2a-b22deaa2d86f",
+        "endpointUrl": "https://n8n.asrani.net/mcp/a16b8fcc-17e7-4628-8a2a-b22deaa2d86f",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
@@ -521,9 +521,9 @@
   },
   "nodeGroups": [],
   "pinData": {},
-  "versionId": "e2a8009c-7c3e-4884-be9c-1e88a6b0e8dd",
-  "activeVersionId": "e2a8009c-7c3e-4884-be9c-1e88a6b0e8dd",
-  "versionCounter": 136,
+  "versionId": "d4cd6336-5416-42f7-9dd1-42a22b3e819a",
+  "activeVersionId": "d4cd6336-5416-42f7-9dd1-42a22b3e819a",
+  "versionCounter": 139,
   "triggerCount": 3,
   "sourceWorkflowId": null,
   "tags": [],
@@ -548,7 +548,7 @@
     }
   ],
   "versionMetadata": {
-    "name": "Version e2a8009c",
+    "name": "Version d4cd6336",
     "description": ""
   }
 }
